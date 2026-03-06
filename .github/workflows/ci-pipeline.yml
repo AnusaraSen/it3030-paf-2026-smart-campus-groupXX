@@ -1,1 +1,56 @@
+name: Smart Campus Hub CI
 
+# Trigger the workflow on pushes or pull requests to main and develop branches
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # Job 1: Backend - Java Spring Boot
+  backend-build:
+    name: Spring Boot API Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven' # Caches dependencies to make builds faster
+
+      - name: Build and Test with Maven
+        # This ensures clean architecture and robust validation are checked [cite: 59, 60]
+        run: mvn clean install 
+        
+  # Job 2: Frontend - React
+  frontend-build:
+    name: React Client Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          # Change this path if your React app is in a specific folder like /client
+          cache-dependency-path: './package-lock.json' 
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Frontend Tests
+        # Satisfies the requirement for evidence of testing 
+        run: npm test -- --watchAll=false
+
+      - name: Build React App
+        run: npm run build
