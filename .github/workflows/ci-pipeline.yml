@@ -26,6 +26,7 @@ jobs:
 
       - name: Build and Test with Maven
         # This ensures clean architecture and robust validation are checked [cite: 59, 60]
+        working-directory: ./server-api
         run: mvn clean install 
         
   # Job 2: Frontend - React
@@ -42,15 +43,17 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          # Change this path if your React app is in a specific folder like /client
-          cache-dependency-path: './package-lock.json' 
+          cache-dependency-path: './client-web-app/package-lock.json' 
 
       - name: Install Dependencies
+        working-directory: ./client-web-app
         run: npm install
 
       - name: Run Frontend Tests
         # Satisfies the requirement for evidence of testing 
+        working-directory: ./client-web-app
         run: npm test -- --watchAll=false
 
       - name: Build React App
+        working-directory: ./client-web-app
         run: npm run build
