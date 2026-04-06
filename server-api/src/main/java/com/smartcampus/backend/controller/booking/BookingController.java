@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+// Booking module - Member 2 - REST endpoints implementation
+
 @RestController
 @RequestMapping("/api/bookings")
 @RequiredArgsConstructor
