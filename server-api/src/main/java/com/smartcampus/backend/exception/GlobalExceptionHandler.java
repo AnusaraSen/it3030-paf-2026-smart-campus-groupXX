@@ -1,3 +1,4 @@
+// Exception handler
 package com.smartcampus.backend.exception;
 
 import org.springframework.http.HttpStatus;
