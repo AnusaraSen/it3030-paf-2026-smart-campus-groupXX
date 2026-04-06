@@ -17,6 +17,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
+// Business logic
+
 @Service
 @RequiredArgsConstructor
 public class BookingServiceImpl implements BookingService {
