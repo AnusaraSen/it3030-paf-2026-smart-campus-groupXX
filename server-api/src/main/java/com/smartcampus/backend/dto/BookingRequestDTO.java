@@ -5,6 +5,8 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+// DTO
+
 @Data
 public class BookingRequestDTO {
 
