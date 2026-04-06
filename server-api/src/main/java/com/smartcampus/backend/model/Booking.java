@@ -1,3 +1,4 @@
+// Entity
 package com.smartcampus.backend.model;
 
 import jakarta.persistence.*;
