@@ -1,23 +1,26 @@
-import logo from './logo.svg';
 import './App.css';
+import './styles/uniCore.css';
+import { useState } from 'react';
+import LandingView from './views/landing/LandingView.jsx';
+import LoginView from './views/auth/LoginView.jsx';
+import SignupView from './views/auth/SignupView.jsx';
 
 function App() {
+  const [activeView, setActiveView] = useState('landing');
+
+  const showLanding = () => setActiveView('landing');
+  const showLogin = () => setActiveView('login');
+  const showSignup = () => setActiveView('signup');
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="app-root">
+      {activeView === 'login' ? (
+        <LoginView onBack={showLanding} onSwitchToSignup={showSignup} />
+      ) : activeView === 'signup' ? (
+        <SignupView onBack={showLanding} onSwitchToLogin={showLogin} />
+      ) : (
+        <LandingView onLogin={showLogin} onSignup={showSignup} />
+      )}
     </div>
   );
 }

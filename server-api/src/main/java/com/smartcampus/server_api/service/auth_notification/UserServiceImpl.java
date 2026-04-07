@@ -53,8 +53,8 @@ public class UserServiceImpl implements UserService {
         user.setEmail(request.email().toLowerCase());
         user.setPassword(passwordEncoder.encode(request.password()));
 
-        // For self-registration, default to STUDENT.
-        user.setRole(Role.STUDENT);
+        // For self-registration, default to USERS.
+        user.setRole(Role.USERS);
 
         User saved = userRepository.save(user);
         return toResponse(saved);

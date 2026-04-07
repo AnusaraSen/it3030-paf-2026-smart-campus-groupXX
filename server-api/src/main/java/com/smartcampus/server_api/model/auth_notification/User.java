@@ -35,8 +35,8 @@ public class User {
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role", nullable = false, columnDefinition = "ENUM('ADMIN','STUDENT','STAFF')")
-    private Role role = Role.STUDENT;
+    @Column(name = "role", nullable = false, length = 20)
+    private Role role = Role.USERS;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -55,7 +55,7 @@ public class User {
         this.lastName = lastName;
         this.email = email;
         this.password = password;
-        this.role = (role == null) ? Role.STUDENT : role;
+        this.role = (role == null) ? Role.USERS : role;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -105,7 +105,7 @@ public class User {
     }
 
     public void setRole(Role role) {
-        this.role = (role == null) ? Role.STUDENT : role;
+        this.role = (role == null) ? Role.USERS : role;
     }
 
     public LocalDateTime getCreatedAt() {
