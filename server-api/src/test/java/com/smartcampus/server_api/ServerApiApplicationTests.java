@@ -1,4 +1,4 @@
-package com.smartcampus.server_api;
+package com.smartcampus.server_api.server_api;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
