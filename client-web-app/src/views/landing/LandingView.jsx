@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { clearAuthSession, getAuthSession } from '../../api/authApi';
+import React from 'react';
+import SiteHeader from '../../components/shared/SiteHeader.jsx';
 
 const featureCards = [
   {
@@ -27,40 +27,7 @@ const featureCards = [
 const campusImageUrl =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuBTmCu8_MCWlAFSe7u3fXg8BjbJ0OgQ3E_vVy1--tswxDkqjhvUPGRoNYQrydbwK8YeKYDRpiBsVF2GGYqPFtHGkFYVz0uRbvYYlfXRFdoV1RieEEMDFxurQ1WipXWg02hx3wdDXOeEoeEID0VW1YWvl8y-ggej0-QB2nWpvNszdNkWgKlPoODvtp3FhhqpWnCcChFBmGUU9qHgNhJU21i4LRe7nm3liD9p6kVFkZ6tj9HP2AfCdt_YPgMxiUDQEveVQV1Lk5XNIR8';
 
-export default function LandingView({ onLogin, onSignup }) {
-  const authSession = getAuthSession();
-  const currentUser = authSession?.user || null;
-  const isLoggedIn = Boolean(authSession?.accessToken && currentUser);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const userMenuRef = useRef(null);
-
-  useEffect(() => {
-    if (!isLoggedIn) {
-      setIsUserMenuOpen(false);
-      return undefined;
-    }
-
-    const handleDocumentClick = (event) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
-        setIsUserMenuOpen(false);
-      }
-    };
-
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        setIsUserMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleDocumentClick);
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('mousedown', handleDocumentClick);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isLoggedIn]);
-
+export default function LandingView({ onLogin, onSignup, onOpenDashboard, onLogout }) {
   const scrollToFeatures = () => {
     const element = document.getElementById('features');
     if (element) {
@@ -68,76 +35,9 @@ export default function LandingView({ onLogin, onSignup }) {
     }
   };
 
-  const handleLogout = () => {
-    clearAuthSession();
-    setIsUserMenuOpen(false);
-    window.location.reload();
-  };
-
   return (
     <div className="uc-shell landing-screen">
-      <header className="landing-nav">
-        <div className="brand">
-          <div className="brand__title">UniCore</div>
-        </div>
-
-        <nav aria-label="Primary" className="nav-links">
-          <a className="nav-link nav-link--active" href="#home">
-            Home
-          </a>
-          <a className="nav-link" href="#bookings">
-            Bookings
-          </a>
-          <a className="nav-link" href="#tickets">
-            Tickets
-          </a>
-          <a className="nav-link" href="#resources">
-            Resources
-          </a>
-          <a className="nav-link" href="#faq">
-            FAQ
-          </a>
-        </nav>
-
-        <div className="nav-actions">
-          {isLoggedIn ? (
-            <div className="landing-user-menu" ref={userMenuRef}>
-              <button
-                aria-expanded={isUserMenuOpen}
-                aria-haspopup="menu"
-                className="landing-user-chip landing-user-chip--button"
-                type="button"
-                onClick={() => setIsUserMenuOpen((currentValue) => !currentValue)}
-              >
-                <span className="landing-user-chip__name">
-                  {currentUser.firstName} {currentUser.lastName}
-                </span>
-                <span className="landing-user-chip__role">{currentUser.role}</span>
-              </button>
-
-              {isUserMenuOpen ? (
-                <div className="landing-user-menu__dropdown" role="menu" aria-label="User menu">
-                  <a className="landing-user-menu__item" href="#dashboard" role="menuitem" onClick={() => setIsUserMenuOpen(false)}>
-                    Dashboard
-                  </a>
-                  <button className="landing-user-menu__item landing-user-menu__item--danger" type="button" onClick={handleLogout} role="menuitem">
-                    Logout
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          ) : (
-            <>
-              <button className="nav-text-button" type="button" onClick={onLogin}>
-                Login
-              </button>
-              <button className="uc-button uc-button--primary uc-button--small" type="button" onClick={onSignup}>
-                Sign Up
-              </button>
-            </>
-          )}
-        </div>
-      </header>
+      <SiteHeader onLogin={onLogin} onSignup={onSignup} onOpenDashboard={onOpenDashboard} onLogout={onLogout} />
 
       <main className="landing-main" id="home">
         <section className="hero-section">

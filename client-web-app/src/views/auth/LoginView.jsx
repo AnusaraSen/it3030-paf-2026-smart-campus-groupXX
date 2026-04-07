@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { loginUser, saveAuthSession } from '../../api/authApi';
 import { getCampusEmailError, getLoginPasswordError, normalizeEmail } from '../../utils/authValidation';
 
-export default function LoginView({ onBack, onSwitchToSignup }) {
+export default function LoginView({ onAuthenticated, onBack, onSwitchToSignup }) {
   const [formValues, setFormValues] = useState({
     email: '',
     password: '',
@@ -66,7 +66,11 @@ export default function LoginView({ onBack, onSwitchToSignup }) {
 
       saveAuthSession(authResponse, formValues.remember);
       setStatus('success');
-      onBack?.();
+      if (onAuthenticated) {
+        onAuthenticated(authResponse);
+      } else {
+        onBack?.();
+      }
     } catch (error) {
       setStatus('error');
       setErrorMessage(error instanceof Error ? error.message : 'Unable to log in.');
