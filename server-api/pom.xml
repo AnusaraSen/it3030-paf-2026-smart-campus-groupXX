@@ -71,6 +71,13 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- H2 (in-memory DB) for local dev/default profile -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
 		<!-- Spring Security -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
