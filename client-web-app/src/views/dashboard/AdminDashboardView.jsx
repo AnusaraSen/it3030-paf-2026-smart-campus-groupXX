@@ -1,5 +1,5 @@
 import React from 'react';
-import { getAuthSession } from '../../api/authApi';
+import { fetchAllUsers, getAuthSession } from '../../api/authApi';
 import AdminSidebar from '../../components/admin-dashboard/AdminSidebar.jsx';
 import MetricCard from '../../components/admin-dashboard/MetricCard.jsx';
 import ChartsPanel from '../../components/admin-dashboard/ChartsPanel.jsx';
@@ -8,21 +8,129 @@ import AdminDashboardFooter from '../../components/admin-dashboard/AdminDashboar
 import AdminDashboardHeader from '../../components/admin-dashboard/AdminDashboardHeader.jsx';
 import UserManagementPanel from '../../components/admin-dashboard/UserManagementPanel.jsx';
 
+function buildUserGrowthSeries(users, months = 6) {
+  const series = [];
+  const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'short' });
+  const now = new Date();
+
+  for (let index = months - 1; index >= 0; index -= 1) {
+    const monthStart = new Date(now.getFullYear(), now.getMonth() - index, 1);
+    const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1);
+    const value = users.filter((user) => {
+      if (!user.createdAt) {
+        return false;
+      }
+
+      const createdAt = new Date(user.createdAt);
+      return createdAt >= monthStart && createdAt < monthEnd;
+    }).length;
+
+    series.push({
+      label: monthFormatter.format(monthStart),
+      value,
+    });
+  }
+
+  return series;
+}
+
+function buildDailyUserGrowthSeries(users, days = 30) {
+  const series = [];
+  const dayFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
+  const now = new Date();
+
+  for (let index = days - 1; index >= 0; index -= 1) {
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - index);
+    dayStart.setHours(0, 0, 0, 0);
+
+    const nextDay = new Date(dayStart);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    const value = users.filter((user) => {
+      if (!user.createdAt) {
+        return false;
+      }
+
+      const createdAt = new Date(user.createdAt);
+      return createdAt >= dayStart && createdAt < nextDay;
+    }).length;
+
+    series.push({
+      key: dayStart.toISOString(),
+      label: dayFormatter.format(dayStart),
+      value,
+    });
+  }
+
+  return series;
+}
+
 export default function AdminDashboardView({ onHome, onLogout, onOpenDashboard }) {
   const authSession = getAuthSession();
   const currentUser = authSession?.user || null;
   const isAdmin = currentUser?.role === 'ADMIN';
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
   const [activeSection, setActiveSection] = React.useState('dashboard');
+  const [dashboardUsers, setDashboardUsers] = React.useState([]);
+  const [isDashboardUsersLoading, setIsDashboardUsersLoading] = React.useState(true);
+  const [dashboardUsersError, setDashboardUsersError] = React.useState('');
   const contentRef = React.useRef(null);
 
+  const handleLogout = React.useCallback(() => {
+    onLogout?.();
+  }, [onLogout]);
+
   React.useEffect(() => {
-    contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    if (typeof contentRef.current?.scrollTo === 'function') {
+      contentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }, [activeSection]);
 
-  const handleLogout = () => {
-    onLogout?.();
-  };
+  React.useEffect(() => {
+    let isActive = true;
+
+    const loadDashboardUsers = async () => {
+      setIsDashboardUsersLoading(true);
+      setDashboardUsersError('');
+
+      try {
+        const response = await fetchAllUsers(authSession?.accessToken || '');
+
+        if (!isActive) {
+          return;
+        }
+
+        setDashboardUsers(Array.isArray(response) ? response : []);
+      } catch (error) {
+        if (!isActive) {
+          return;
+        }
+
+        if (error?.status === 401 || error?.status === 403) {
+          handleLogout();
+          return;
+        }
+
+        setDashboardUsers([]);
+        setDashboardUsersError(error instanceof Error ? error.message : 'Failed to load dashboard user metrics.');
+      } finally {
+        if (isActive) {
+          setIsDashboardUsersLoading(false);
+        }
+      }
+    };
+
+    loadDashboardUsers();
+
+    return () => {
+      isActive = false;
+    };
+  }, [authSession?.accessToken, handleLogout]);
+
+  const totalUsers = dashboardUsers.length;
+  const monthlyUserGrowthSeries = React.useMemo(() => buildUserGrowthSeries(dashboardUsers, 6), [dashboardUsers]);
+  const dailyUserGrowthSeries = React.useMemo(() => buildDailyUserGrowthSeries(dashboardUsers, 30), [dashboardUsers]);
+  const dashboardTotalUsersValue = dashboardUsersError ? '—' : isDashboardUsersLoading ? '...' : totalUsers.toLocaleString('en-US');
 
   if (!currentUser || !authSession?.accessToken) {
     return (
@@ -100,13 +208,13 @@ export default function AdminDashboardView({ onHome, onLogout, onOpenDashboard }
               </section>
 
               <section className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-                <MetricCard icon="groups" title="Total Users" value="24,812" trend="5.2%" />
+                <MetricCard icon="groups" title="Total Users" value={dashboardTotalUsersValue} trend={dashboardUsersError ? undefined : isDashboardUsersLoading ? 'Loading' : 'Live'} />
                 <MetricCard icon="account_balance_wallet" title="Monthly Revenue" value="$842.2k" accentClassName="bg-[#F17620]/10 text-[#F17620]" />
                 <MetricCard icon="widgets" title="Active Modules" value="186" />
                 <MetricCard icon="bolt" title="System Uptime" value="99.98%" accentClassName="bg-emerald-50 text-emerald-600" />
               </section>
 
-              <ChartsPanel />
+              <ChartsPanel monthlyUserGrowthSeries={monthlyUserGrowthSeries} dailyUserGrowthSeries={dailyUserGrowthSeries} dataError={dashboardUsersError} />
 
               <ActivityAndAlertsPanel />
             </>

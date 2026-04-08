@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
+export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
 
 const AUTH_SESSION_KEY = 'unicore.auth.session';
 const AUTH_TOKEN_KEY = 'unicore.auth.token';
@@ -33,6 +33,31 @@ function safeParseJson(text) {
     return JSON.parse(text);
   } catch {
     return text;
+  }
+}
+
+function decodeBase64Url(value) {
+  const normalizedValue = value.replace(/-/g, '+').replace(/_/g, '/');
+  const paddedValue = normalizedValue.padEnd(Math.ceil(normalizedValue.length / 4) * 4, '=');
+  const binaryValue = window.atob(paddedValue);
+  const bytes = Uint8Array.from(binaryValue, (character) => character.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+export function decodeJwtPayload(token) {
+  if (!token || typeof token !== 'string') {
+    return null;
+  }
+
+  const parts = token.split('.');
+  if (parts.length < 2) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(decodeBase64Url(parts[1]));
+  } catch {
+    return null;
   }
 }
 
