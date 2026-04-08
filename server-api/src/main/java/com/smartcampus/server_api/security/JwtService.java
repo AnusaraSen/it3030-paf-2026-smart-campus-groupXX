@@ -23,8 +23,8 @@ public class JwtService {
     private final long expirationMinutes;
 
     public JwtService(
-            @Value("${app.jwt.secret}") String base64Secret,
-            @Value("${app.jwt.expiration-minutes:60}") long expirationMinutes) {
+            @Value("${JWT_SECRET:ZGU3ZDU2N2E1ZGMwYjA0YjY3OWQ4OTc1M2I5ZjRkMjY0NDVjNDFkNGUyOTVkZTBjYjZlYjQ1M2FlN2YyMQ==}") String base64Secret,
+            @Value("${JWT_EXPIRATION_MINUTES:60}") long expirationMinutes) {
         this.signingKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(base64Secret));
         this.expirationMinutes = expirationMinutes;
     }
