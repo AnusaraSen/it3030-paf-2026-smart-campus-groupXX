@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthContext';
 import { getTicket, postComment, putComment, deleteComment } from '../api/ticketsApi';
 import { absoluteUploadUrl } from '../api/client';
 import { StatusBadge } from '../components/StatusBadge';
+import { getAuthSession } from '../api/authApi';
 
 /** Matches backend stub until JWT exposes real user id */
 const DEMO_USER_ID = 1;
@@ -13,9 +14,13 @@ const panelCls = 'rounded-xl border border-slate-100 bg-slate-50/50 p-4';
 export function TicketDetailPage() {
   const { id } = useParams();
   const { authHeader } = useAuth();
+  const authSession = getAuthSession();
+  const role = authSession?.user?.role || 'USERS';
+  const isTechnician = role === 'TECHNICIAN';
   const [ticket, setTicket] = useState(null);
   const [error, setError] = useState('');
   const [comment, setComment] = useState('');
+  const [technicianComment, setTechnicianComment] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState('');
 
@@ -39,6 +44,18 @@ export function TicketDetailPage() {
     try {
       await postComment(id, comment.trim(), authHeader);
       setComment('');
+      await load();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const onAddTechnicianComment = async (e) => {
+    e.preventDefault();
+    if (!technicianComment.trim()) return;
+    try {
+      await postComment(id, `[TECHNICIAN] ${technicianComment.trim()}`, authHeader);
+      setTechnicianComment('');
       await load();
     } catch (err) {
       alert(err.message);
@@ -196,6 +213,11 @@ export function TicketDetailPage() {
               <div className="text-xs text-slate-500">
                 User #{c.userId} · {c.createdAt ? new Date(c.createdAt).toLocaleString() : ''}
               </div>
+              {String(c.message || '').startsWith('[TECHNICIAN]') ? (
+                <span className="mt-1 inline-block rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold tracking-wide text-indigo-800">
+                  Technician comment
+                </span>
+              ) : null}
               {editingId === c.id ? (
                 <div className="mt-3 space-y-2">
                   <textarea
@@ -249,25 +271,49 @@ export function TicketDetailPage() {
           ))}
         </ul>
 
-        <form className="mt-6 border-t border-slate-100 pt-4" onSubmit={onAddComment}>
-          <label className="block text-sm font-semibold text-slate-700">
-            Add comment (max 500)
-            <textarea
-              rows={3}
-              maxLength={500}
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ring-campus-primary focus:ring-2"
-            />
-          </label>
-          <button
-            type="submit"
-            disabled={!comment.trim()}
-            className="mt-3 rounded-full bg-campus-primary px-6 py-2 text-sm font-bold text-white hover:bg-campus-primary-hover disabled:opacity-50"
-          >
-            Post comment
-          </button>
-        </form>
+        {!isTechnician ? (
+          <form className="mt-6 border-t border-slate-100 pt-4" onSubmit={onAddComment}>
+            <label className="block text-sm font-semibold text-slate-700">
+              Add user comment (max 500)
+              <textarea
+                rows={3}
+                maxLength={500}
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ring-campus-primary focus:ring-2"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={!comment.trim()}
+              className="mt-3 rounded-full bg-campus-primary px-6 py-2 text-sm font-bold text-white hover:bg-campus-primary-hover disabled:opacity-50"
+            >
+              Post comment
+            </button>
+          </form>
+        ) : null}
+
+        {isTechnician ? (
+          <form className="mt-6 border-t border-slate-100 pt-4" onSubmit={onAddTechnicianComment}>
+            <label className="block text-sm font-semibold text-indigo-800">
+              Technician comment (max 500)
+              <textarea
+                rows={3}
+                maxLength={500}
+                value={technicianComment}
+                onChange={(e) => setTechnicianComment(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-indigo-200 bg-indigo-50/40 px-3 py-2 text-sm outline-none ring-indigo-400 focus:ring-2"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={!technicianComment.trim()}
+              className="mt-3 rounded-full bg-indigo-600 px-6 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50"
+            >
+              Post technician comment
+            </button>
+          </form>
+        ) : null}
       </article>
     </section>
   );

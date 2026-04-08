@@ -1,13 +1,82 @@
-import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthContext';
-import { HomePage } from './pages/HomePage';
 import { TicketsHubPage, TicketsOverview } from './pages/TicketsHubPage';
 import { CreateTicketPage } from './pages/CreateTicketPage';
 import { MyTicketsPage } from './pages/MyTicketsPage';
 import { TicketDetailPage } from './pages/TicketDetailPage';
+import LandingView from './views/landing/LandingView';
+import LoginView from './views/auth/LoginView';
+import SignupView from './views/auth/SignupView';
+import AdminDashboardView from './views/dashboard/AdminDashboardView';
+import TechnicianDashboardView from './views/dashboard/TechnicianDashboardView';
+import { clearAuthSession, getAuthSession } from './api/authApi';
+import './styles/uniCore.css';
+
+function LandingRoute() {
+  const navigate = useNavigate();
+  const openDashboardByRole = () => {
+    const role = getAuthSession()?.user?.role;
+    if (role === 'ADMIN') {
+      navigate('/admin-dashboard');
+      return;
+    }
+    if (role === 'TECHNICIAN') {
+      navigate('/technician-dashboard');
+    }
+  };
+
+  return (
+    <LandingView
+      onHome={() => navigate('/')}
+      onTickets={() => navigate('/tickets')}
+      onLogin={() => navigate('/login')}
+      onSignup={() => navigate('/signup')}
+      onOpenDashboard={openDashboardByRole}
+      onLogout={() => {
+        clearAuthSession();
+        navigate('/');
+      }}
+    />
+  );
+}
+
+function LoginRoute() {
+  const navigate = useNavigate();
+  return (
+    <LoginView
+      onBack={() => navigate('/')}
+      onSwitchToSignup={() => navigate('/signup')}
+      onAuthenticated={(authResponse) => {
+        const role = authResponse?.user?.role;
+        if (role === 'TECHNICIAN') {
+          navigate('/technician-dashboard');
+          return;
+        }
+        if (role === 'ADMIN') {
+          navigate('/admin-dashboard');
+          return;
+        }
+        navigate('/');
+      }}
+    />
+  );
+}
+
+function SignupRoute() {
+  const navigate = useNavigate();
+  return (
+    <SignupView
+      onBack={() => navigate('/')}
+      onSwitchToLogin={() => navigate('/login')}
+    />
+  );
+}
 
 function Layout({ children }) {
   const { pathname } = useLocation();
+  if (pathname === '/' || pathname === '/admin-dashboard' || pathname === '/technician-dashboard') {
+    return <>{children}</>;
+  }
   const ticketSectionActive = pathname.startsWith('/tickets');
 
   return (
@@ -36,10 +105,22 @@ function Layout({ children }) {
 }
 
 function AppRoutes() {
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    clearAuthSession();
+    navigate('/');
+  };
   return (
     <Layout>
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<LandingRoute />} />
+        <Route path="/login" element={<LoginRoute />} />
+        <Route path="/signup" element={<SignupRoute />} />
+        <Route path="/admin-dashboard" element={<AdminDashboardView onHome={() => navigate('/')} onLogout={handleLogout} />} />
+        <Route
+          path="/technician-dashboard"
+          element={<TechnicianDashboardView onHome={() => navigate('/')} onLogout={handleLogout} />}
+        />
         <Route path="/tickets" element={<TicketsHubPage />}>
           <Route index element={<TicketsOverview />} />
           <Route path="new" element={<CreateTicketPage />} />

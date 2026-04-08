@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { clearAuthSession, getAuthSession } from '../../api/authApi';
 
-export default function SiteHeader({ className = '', onHome, onLogin, onSignup, onOpenDashboard, onLogout }) {
+export default function SiteHeader({ className = '', onHome, onLogin, onSignup, onOpenDashboard, onLogout, onTickets }) {
   const authSession = getAuthSession();
   const currentUser = authSession?.user || null;
   const isLoggedIn = Boolean(authSession?.accessToken && currentUser);
@@ -72,9 +72,15 @@ export default function SiteHeader({ className = '', onHome, onLogin, onSignup, 
         <a className="nav-link" href="#bookings">
           Bookings
         </a>
-        <a className="nav-link" href="#tickets">
-          Tickets
-        </a>
+        {onTickets ? (
+          <button className="nav-link nav-link--button" type="button" onClick={onTickets}>
+            Tickets
+          </button>
+        ) : (
+          <a className="nav-link" href="#tickets">
+            Tickets
+          </a>
+        )}
         <a className="nav-link" href="#resources">
           Resources
         </a>
@@ -101,7 +107,7 @@ export default function SiteHeader({ className = '', onHome, onLogin, onSignup, 
 
             {isUserMenuOpen ? (
               <div className="landing-user-menu__dropdown" role="menu" aria-label="User menu">
-                {currentUser.role === 'ADMIN' ? (
+                {currentUser.role === 'ADMIN' || currentUser.role === 'TECHNICIAN' ? (
                   <button className="landing-user-menu__item" type="button" role="menuitem" onClick={handleDashboard}>
                     Dashboard
                   </button>

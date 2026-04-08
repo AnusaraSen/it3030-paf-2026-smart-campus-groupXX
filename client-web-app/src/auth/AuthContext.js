@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useMemo } from 'react';
+import { getAuthToken } from '../api/authApi';
 
 /** Campus user (Module C – report & view own tickets). Matches Spring Security demo user. */
 const USERNAME = 'user';
@@ -8,6 +9,10 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const authHeader = useCallback(() => {
+    const token = getAuthToken();
+    if (token) {
+      return `Bearer ${token}`;
+    }
     return `Basic ${btoa(`${USERNAME}:${PASSWORD}`)}`;
   }, []);
 
