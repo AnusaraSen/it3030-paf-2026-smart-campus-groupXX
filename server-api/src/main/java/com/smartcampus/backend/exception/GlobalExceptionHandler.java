@@ -1,6 +1,7 @@
 // Exception handler
 package com.smartcampus.backend.exception;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -12,6 +13,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
+@Profile("legacy-backend-exceptions")
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
