@@ -1,14 +1,28 @@
 import axios from 'axios';
+import { getAuthToken } from './authApi';
 
 const api = axios.create({
   baseURL: 'http://localhost:8080/api',
   headers: { 'Content-Type': 'application/json' },
 });
 
+// Attach JWT token from session to every request
+api.interceptors.request.use((config) => {
+  const token = getAuthToken();
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return config;
+});
+
 export const getMyBookings = () => api.get('/bookings/my');
 
-export const getAllBookings = (page = 0, size = 10) =>
-  api.get(`/bookings?page=${page}&size=${size}`);
+export const getAllBookings = (status, date) => {
+  const params = {};
+  if (status && status !== 'ALL') params.status = status;
+  if (date) params.date = date;
+  return api.get('/bookings', { params });
+};
 
 export const createBooking = (data) => api.post('/bookings', data);
 
