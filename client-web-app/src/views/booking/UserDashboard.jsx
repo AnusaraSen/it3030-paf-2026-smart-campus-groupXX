@@ -1,34 +1,33 @@
 import { useState } from 'react';
 import useBookings from '../../viewmodels/useBookings';
 import StatusBadge from '../../components/booking/StatusBadge';
-import BookingStatsCard from '../../components/booking/BookingStatsCard';
 
-// ── Inline SVG icons ────────────────────────────────────────────────────────
+// ── SVG Icons ────────────────────────────────────────────────────────────────
 
 const IconCalendar = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-    <line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-  </svg>
-);
-const IconLogout = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-    <polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
-  </svg>
-);
-const IconMenu = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
-  </svg>
-);
-const IconClose = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
   </svg>
 );
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
+const IconLogout = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <polyline points="16 17 21 12 16 7" />
+    <line x1="21" y1="12" x2="9" y2="12" />
+  </svg>
+);
+
+const IconChevronDown = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 const formatDateTime = (iso) => {
   if (!iso) return '—';
@@ -39,569 +38,410 @@ const formatDateTime = (iso) => {
   });
 };
 
-// ── Nav config ───────────────────────────────────────────────────────────────
+// ── Stat Card ─────────────────────────────────────────────────────────────────
 
-const NAV_ITEMS = [
-  { key: 'my-bookings', label: 'My Bookings', Icon: IconCalendar },
-];
-
-// ── Styles ───────────────────────────────────────────────────────────────────
-
-const S = {
-  root: {
-    display: 'flex',
-    minHeight: '100vh',
-    fontFamily: 'Inter, sans-serif',
-    background: '#E7ECFE',
-  },
-
-  // Sidebar
-  sidebar: (open) => ({
-    width: '240px',
-    minWidth: '240px',
-    background: '#FFFFFF',
-    borderRight: '1px solid #E5E7EB',
-    display: 'flex',
-    flexDirection: 'column',
-    padding: '0',
-    position: 'fixed',
-    top: 0, left: 0, bottom: 0,
-    zIndex: 100,
-    transform: open ? 'translateX(0)' : 'translateX(-240px)',
-    transition: 'transform 0.25s ease',
-  }),
-  sidebarBrand: {
-    padding: '28px 24px 24px',
-    borderBottom: '1px solid #E5E7EB',
-  },
-  brandText: {
-    fontFamily: 'Manrope, sans-serif',
-    fontWeight: 800,
-    fontSize: '1.15rem',
-    color: '#110755',
-    letterSpacing: '-0.01em',
-    margin: 0,
-  },
-  brandSub: {
-    fontSize: '0.7rem',
-    color: '#6B7280',
-    marginTop: '2px',
-    letterSpacing: '0.1em',
-    textTransform: 'uppercase',
-  },
-  nav: {
-    flex: 1,
-    padding: '16px 12px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px',
-  },
-  navItem: (active) => ({
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '11px 14px',
-    borderRadius: '10px',
-    cursor: 'pointer',
-    color: active ? '#F57923' : '#110755',
-    background: active ? '#FFF7ED' : 'transparent',
-    fontWeight: active ? 600 : 400,
-    fontSize: '0.875rem',
-    position: 'relative',
-    transition: 'all 0.15s ease',
-    userSelect: 'none',
-  }),
-  navPill: {
-    position: 'absolute',
-    left: 0,
-    top: '50%',
-    transform: 'translateY(-50%)',
-    width: '4px',
-    height: '60%',
-    borderRadius: '0 4px 4px 0',
-    background: '#F57923',
-  },
-  sidebarFooter: {
-    padding: '16px 12px 24px',
-    borderTop: '1px solid #E5E7EB',
-  },
-  logoutBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '11px 14px',
-    borderRadius: '10px',
-    cursor: 'pointer',
-    color: '#6B7280',
-    fontSize: '0.875rem',
-    background: 'transparent',
-    border: 'none',
-    width: '100%',
-    textAlign: 'left',
-    transition: 'color 0.15s ease',
-  },
-
-  // Main
-  main: {
-    flex: 1,
-    marginLeft: '240px',
-    display: 'flex',
-    flexDirection: 'column',
-    minHeight: '100vh',
-    transition: 'margin-left 0.25s ease',
-  },
-
-  // Top bar (mobile)
-  topBar: {
-    display: 'none',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '14px 20px',
-    background: '#110755',
-    position: 'sticky',
-    top: 0,
-    zIndex: 90,
-  },
-
-  content: {
-    padding: '40px 40px 60px',
-  },
-
-  // Header row
-  pageHeader: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: '36px',
-    flexWrap: 'wrap',
-    gap: '16px',
-  },
-  welcomeTitle: {
-    fontFamily: 'Manrope, sans-serif',
-    fontSize: '2rem',
-    fontWeight: 800,
-    color: '#110755',
-    letterSpacing: '-0.02em',
-    margin: 0,
-    lineHeight: 1.1,
-  },
-  welcomeSub: {
-    fontSize: '0.875rem',
-    color: '#6B7280',
-    marginTop: '6px',
-  },
-
-  // Orange primary button
-  btnPrimary: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '11px 22px',
-    borderRadius: '12px',
-    background: 'linear-gradient(135deg, #F57923, #fe802a)',
-    color: '#ffffff',
-    fontFamily: 'Inter, sans-serif',
-    fontWeight: 600,
-    fontSize: '0.875rem',
-    border: 'none',
-    cursor: 'pointer',
-    boxShadow: '0 4px 14px rgba(245,121,35,0.35)',
-    whiteSpace: 'nowrap',
-    transition: 'opacity 0.15s ease',
-  },
-
-  // Stats row
-  statsRow: {
-    display: 'flex',
-    gap: '20px',
-    marginBottom: '36px',
-    flexWrap: 'wrap',
-  },
-
-  // Section card
-  sectionCard: {
-    background: '#ffffff',
-    borderRadius: '16px',
-    boxShadow: '0px 4px 24px rgba(17, 7, 85, 0.07)',
-    overflow: 'hidden',
-  },
-  sectionHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '22px 28px',
-    flexWrap: 'wrap',
-    gap: '12px',
-  },
-  sectionTitle: {
-    fontFamily: 'Manrope, sans-serif',
-    fontWeight: 700,
-    fontSize: '1.1rem',
-    color: '#110755',
-    margin: 0,
-  },
-
-  // Table
-  tableWrap: {
-    overflowX: 'auto',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    fontSize: '0.875rem',
-    fontFamily: 'Inter, sans-serif',
-  },
-  th: {
-    padding: '12px 20px',
-    textAlign: 'left',
-    fontSize: '0.7rem',
-    fontWeight: 700,
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
-    color: '#9CA3AF',
-    background: '#F9FAFB',
-    whiteSpace: 'nowrap',
-  },
-  td: {
-    padding: '16px 20px',
-    color: '#374151',
-    verticalAlign: 'middle',
-  },
-
-  // Cancel button (table inline)
-  btnCancel: {
-    padding: '6px 14px',
-    borderRadius: '8px',
-    background: 'linear-gradient(135deg, #F57923, #fe802a)',
-    color: '#fff',
-    fontSize: '0.75rem',
-    fontWeight: 600,
-    border: 'none',
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-    transition: 'opacity 0.15s ease',
-  },
-
-  // Empty/loading states
-  stateBox: {
-    padding: '60px 20px',
-    textAlign: 'center',
-    color: '#9CA3AF',
-    fontFamily: 'Inter, sans-serif',
-    fontSize: '0.9rem',
-  },
-
-  // Cancel modal overlay
-  overlay: {
-    position: 'fixed',
-    inset: 0,
-    background: 'rgba(17, 7, 85, 0.35)',
-    backdropFilter: 'blur(4px)',
-    zIndex: 200,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '20px',
-  },
-  modal: {
+const StatCard = ({ title, count, icon, accentColor }) => (
+  <div style={{
+    flex: 1, minWidth: '160px',
     background: '#fff',
-    borderRadius: '20px',
-    padding: '32px',
-    width: '100%',
-    maxWidth: '440px',
-    boxShadow: '0px 24px 48px rgba(17, 7, 85, 0.18)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-  },
-  modalTitle: {
-    fontFamily: 'Manrope, sans-serif',
-    fontWeight: 700,
-    fontSize: '1.15rem',
-    color: '#110755',
-    margin: 0,
-  },
-  modalSub: {
-    fontSize: '0.85rem',
-    color: '#6B7280',
-    marginTop: '-8px',
-  },
-  textarea: {
-    width: '100%',
-    padding: '12px 14px',
-    borderRadius: '10px',
-    border: 'none',
-    background: 'rgba(231,236,254,0.6)',
-    fontSize: '0.875rem',
-    fontFamily: 'Inter, sans-serif',
-    color: '#374151',
-    resize: 'vertical',
-    minHeight: '90px',
-    outline: 'none',
-    boxSizing: 'border-box',
-  },
-  modalActions: {
-    display: 'flex',
-    gap: '10px',
-    justifyContent: 'flex-end',
-    marginTop: '4px',
-  },
-  btnGhost: {
-    padding: '10px 20px',
-    borderRadius: '10px',
-    background: 'rgba(17,7,85,0.05)',
-    color: '#110755',
-    fontFamily: 'Inter, sans-serif',
-    fontWeight: 600,
-    fontSize: '0.875rem',
-    border: 'none',
-    cursor: 'pointer',
-  },
-};
+    borderRadius: '16px',
+    padding: '24px',
+    boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+    display: 'flex', flexDirection: 'column',
+  }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
+      <span style={{ fontSize: '11px', fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'Inter, sans-serif' }}>
+        {title}
+      </span>
+      <span style={{ fontSize: '22px', lineHeight: 1 }}>{icon}</span>
+    </div>
+    <div style={{ fontSize: '36px', fontWeight: 800, fontFamily: 'Manrope, sans-serif', color: '#110755', lineHeight: 1, marginBottom: '14px' }}>
+      {count}
+    </div>
+    <div style={{ height: '3px', width: '40px', borderRadius: '999px', background: accentColor }} />
+  </div>
+);
 
 // ── Component ────────────────────────────────────────────────────────────────
 
 const UserDashboard = () => {
   const { bookings, loading, error, stats, handleCancel } = useBookings();
-  const [activePage, setActivePage]   = useState('my-bookings');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeNav, setActiveNav] = useState('Bookings');
 
-  // Cancel modal state
   const [cancelModal, setCancelModal] = useState({ open: false, bookingId: null });
   const [cancelReason, setCancelReason] = useState('');
-  const [cancelling, setCancelling]   = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState('');
 
-  const openCancelModal = (id) => {
-    setCancelModal({ open: true, bookingId: id });
-    setCancelReason('');
-    setCancelError('');
-  };
-
-  const closeCancelModal = () => {
-    setCancelModal({ open: false, bookingId: null });
-    setCancelling(false);
-    setCancelError('');
-  };
+  const openCancelModal  = (id) => { setCancelModal({ open: true, bookingId: id }); setCancelReason(''); setCancelError(''); };
+  const closeCancelModal = ()   => { setCancelModal({ open: false, bookingId: null }); setCancelling(false); setCancelError(''); };
 
   const confirmCancel = async () => {
-    setCancelling(true);
-    setCancelError('');
-    try {
-      await handleCancel(cancelModal.bookingId, cancelReason);
-      closeCancelModal();
-    } catch (err) {
-      setCancelError(err.message);
-      setCancelling(false);
-    }
+    setCancelling(true); setCancelError('');
+    try   { await handleCancel(cancelModal.bookingId, cancelReason); closeCancelModal(); }
+    catch (err) { setCancelError(err.message); setCancelling(false); }
   };
 
-  // Responsive: detect narrow viewport
-  const isNarrow = typeof window !== 'undefined' && window.innerWidth < 768;
-  const effectiveSidebarOpen = isNarrow ? sidebarOpen : true;
+  const NAV_LINKS = ['Home', 'Bookings', 'Tickets', 'Resources', 'FAQ'];
 
   return (
     <>
-      {/* Google Fonts */}
+      {/* ── Global styles ─────────────────────────────────────────────────── */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { margin: 0; font-family: Inter, sans-serif; background: #E7ECFE; }
 
-        * { box-sizing: border-box; }
-
-        body { margin: 0; background: #E7ECFE; }
-
-        .sidebar-overlay {
-          display: none;
+        /* ─ Header ─ */
+        .uc-header {
+          width: 100%; height: 70px;
+          background: #ffffff;
+          border-bottom: 1px solid #F3F4F6;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+          display: flex; align-items: center;
+          padding: 0 32px; gap: 0;
+          position: sticky; top: 0; z-index: 200; flex-shrink: 0;
         }
 
-        @media (max-width: 767px) {
-          .main-area { margin-left: 0 !important; }
-          .top-bar   { display: flex !important; }
-          .content-pad { padding: 24px 20px 48px !important; }
-          .stats-row { flex-direction: column !important; }
-          .sidebar-overlay {
-            display: block;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.4);
-            z-index: 99;
-          }
-          .page-header { flex-direction: column !important; align-items: flex-start !important; }
+        /* Logo block */
+        .uc-logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+        .uc-logo-circle {
+          width: 38px; height: 38px; border-radius: 11px;
+          background: #F57923;
+          display: flex; align-items: center; justify-content: center;
+          color: #fff; font-family: Manrope, sans-serif;
+          font-size: 1.1rem; font-weight: 800; flex-shrink: 0;
+          box-shadow: 0 4px 10px rgba(245,121,35,0.32);
         }
+        .uc-logo-text { display: flex; flex-direction: column; line-height: 1; }
+        .uc-logo-name {
+          font-family: Manrope, sans-serif; font-size: 1.05rem;
+          font-weight: 800; color: #110755;
+        }
+        .uc-logo-sub {
+          font-size: 0.52rem; font-weight: 700;
+          letter-spacing: 0.16em; text-transform: uppercase;
+          color: #9CA3AF; margin-top: 3px;
+        }
+
+        /* Nav */
+        .uc-nav { display: flex; align-items: center; gap: 2px; flex: 1; justify-content: center; }
+        .uc-nav-btn {
+          padding: 7px 14px; border-radius: 8px;
+          font-size: 0.875rem; font-weight: 500;
+          color: #6B7280; cursor: pointer;
+          border: none; background: transparent;
+          font-family: Inter, sans-serif;
+          transition: color 0.15s, background 0.15s;
+        }
+        .uc-nav-btn:hover { color: #110755; background: #F3F4F6; }
+        .uc-nav-btn.active { color: #F57923; font-weight: 700; background: #FFF7ED; }
+
+        /* User chip */
+        .uc-user { display: flex; align-items: center; gap: 10px; flex-shrink: 0; cursor: pointer; }
+        .uc-user-info { text-align: right; line-height: 1; }
+        .uc-user-name { font-size: 0.875rem; font-weight: 700; color: #110755; font-family: Inter, sans-serif; }
+        .uc-user-role { font-size: 0.58rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #F57923; margin-top: 3px; }
+        .uc-avatar {
+          width: 36px; height: 36px; border-radius: 50%;
+          background: #F57923;
+          display: flex; align-items: center; justify-content: center;
+          font-family: Manrope, sans-serif; font-weight: 800;
+          font-size: 0.78rem; color: #fff; flex-shrink: 0;
+        }
+        .uc-chevron { color: #9CA3AF; display: flex; align-items: center; margin-left: 2px; }
+
+        /* ─ Layout ─ */
+        .uc-app  { display: flex; flex-direction: column; min-height: 100vh; }
+        .uc-body { display: flex; flex: 1; }
+
+        /* ─ Sidebar ─ */
+        .uc-sidebar {
+          width: 240px; min-width: 240px;
+          background: #ffffff;
+          box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+          display: flex; flex-direction: column;
+          height: calc(100vh - 70px);
+          position: sticky; top: 70px;
+          overflow-y: auto;
+        }
+        .uc-sb-brand {
+          padding: 22px 18px 18px;
+          border-bottom: 1px solid #F3F4F6;
+          display: flex; align-items: center; gap: 10px;
+        }
+        .uc-sb-circle {
+          width: 34px; height: 34px; border-radius: 9px;
+          background: #F57923;
+          display: flex; align-items: center; justify-content: center;
+          color: #fff; font-family: Manrope, sans-serif;
+          font-size: 0.9rem; font-weight: 800; flex-shrink: 0;
+          box-shadow: 0 3px 8px rgba(245,121,35,0.28);
+        }
+        .uc-sb-brand-text { display: flex; flex-direction: column; line-height: 1; }
+        .uc-sb-brand-name { font-family: Manrope, sans-serif; font-weight: 800; font-size: 0.95rem; color: #110755; }
+        .uc-sb-brand-sub  { font-size: 0.5rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #9CA3AF; margin-top: 3px; }
+
+        .uc-sb-nav { flex: 1; padding: 12px 10px; display: flex; flex-direction: column; gap: 2px; }
+        .uc-sb-item {
+          display: flex; align-items: center; gap: 10px;
+          padding: 12px 16px;
+          font-size: 0.875rem; font-weight: 500;
+          font-family: Inter, sans-serif;
+          color: #374151; background: transparent;
+          border-left: 3px solid transparent;
+          border-radius: 0 8px 8px 0;
+          cursor: pointer; transition: all 0.15s;
+          user-select: none;
+        }
+        .uc-sb-item:hover { background: #F9FAFB; color: #110755; }
+        .uc-sb-item.active {
+          color: #F57923; background: #FFF7ED;
+          border-left: 3px solid #F57923;
+          font-weight: 600;
+        }
+
+        .uc-sb-footer { padding: 12px 10px 20px; border-top: 1px solid #F3F4F6; }
+        .uc-logout {
+          display: flex; align-items: center; gap: 10px;
+          padding: 12px 16px;
+          font-size: 0.875rem; font-weight: 500;
+          font-family: Inter, sans-serif;
+          color: #9CA3AF; background: transparent;
+          border: none; border-radius: 8px;
+          width: 100%; text-align: left; cursor: pointer;
+          transition: color 0.15s, background 0.15s;
+        }
+        .uc-logout:hover { color: #F57923; background: #FFF7ED; }
+
+        /* ─ Main ─ */
+        .uc-main    { flex: 1; min-width: 0; }
+        .uc-content { padding: 32px; }
+
+        /* ─ Table ─ */
+        .uc-table { width: 100%; border-collapse: collapse; font-size: 14px; font-family: Inter, sans-serif; }
+        .uc-th {
+          padding: 12px 20px; text-align: left;
+          font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+          text-transform: uppercase; color: #9CA3AF;
+          background: #F9FAFB; white-space: nowrap;
+        }
+        .uc-td { padding: 15px 20px; color: #374151; vertical-align: middle; border-bottom: 1px solid #F3F4F6; }
+        .uc-tr:last-child .uc-td { border-bottom: none; }
+        .uc-tr:hover .uc-td { background: #F9FAFB; }
+
+        /* ─ Responsive ─ */
+        @media (max-width: 900px) { .uc-nav { display: none; } }
+        @media (max-width: 767px) { .uc-sidebar { display: none; } .uc-content { padding: 20px 16px; } }
       `}</style>
 
-      <div style={S.root}>
+      <div className="uc-app">
 
-        {/* ── Sidebar overlay (mobile) ── */}
-        {isNarrow && effectiveSidebarOpen && (
-          <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
-        )}
+        {/* ══ Header ══════════════════════════════════════════════════════════ */}
+        <header className="uc-header">
 
-        {/* ── Sidebar ── */}
-        <aside style={S.sidebar(effectiveSidebarOpen)}>
-          <div style={S.sidebarBrand}>
-            <p style={S.brandText}>Smart Campus</p>
-            <p style={S.brandSub}>Student Portal</p>
+          {/* Logo */}
+          <div className="uc-logo">
+            <div className="uc-logo-circle">U</div>
+            <div className="uc-logo-text">
+              <span className="uc-logo-name">UniCore</span>
+              <span className="uc-logo-sub">Operational Hub</span>
+            </div>
           </div>
 
-          <nav style={S.nav}>
-            {NAV_ITEMS.map(({ key, label, Icon }) => (
-              <div
-                key={key}
-                style={S.navItem(activePage === key)}
-                onClick={() => { setActivePage(key); if (isNarrow) setSidebarOpen(false); }}
+          {/* Nav */}
+          <nav className="uc-nav">
+            {NAV_LINKS.map((link) => (
+              <button
+                key={link}
+                className={`uc-nav-btn${activeNav === link ? ' active' : ''}`}
+                onClick={() => setActiveNav(link)}
               >
-                {activePage === key && <span style={S.navPill} />}
-                <Icon />
-                {label}
-              </div>
+                {link}
+              </button>
             ))}
           </nav>
 
-          <div style={S.sidebarFooter}>
-            <button style={S.logoutBtn}>
-              <IconLogout />
-              Logout
-            </button>
-          </div>
-        </aside>
-
-        {/* ── Main ── */}
-        <main className="main-area" style={{ ...S.main, marginLeft: '240px' }}>
-
-          {/* Mobile top bar */}
-          <div className="top-bar" style={S.topBar}>
-            <button
-              onClick={() => setSidebarOpen((v) => !v)}
-              style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex' }}
-            >
-              {effectiveSidebarOpen ? <IconClose /> : <IconMenu />}
-            </button>
-            <span style={{ ...S.brandText, fontSize: '1rem' }}>Smart Campus</span>
-            <span style={{ width: 22 }} />
+          {/* User */}
+          <div className="uc-user">
+            <div className="uc-user-info">
+              <div className="uc-user-name">User</div>
+              <div className="uc-user-role">User</div>
+            </div>
+            <div className="uc-avatar">SU</div>
+            <span className="uc-chevron"><IconChevronDown /></span>
           </div>
 
-          {/* Page content */}
-          <div className="content-pad" style={S.content}>
+        </header>
 
-            {/* ── Page header ── */}
-            <div className="page-header" style={S.pageHeader}>
-              <div>
-                <h1 style={S.welcomeTitle}>Welcome, Student</h1>
-                <p style={S.welcomeSub}>Here's an overview of your facility bookings.</p>
+        {/* ══ Body ════════════════════════════════════════════════════════════ */}
+        <div className="uc-body">
+
+          {/* ── Sidebar ── */}
+          <aside className="uc-sidebar">
+
+            {/* Brand */}
+            <div className="uc-sb-brand">
+              <div className="uc-sb-circle">U</div>
+              <div className="uc-sb-brand-text">
+                <span className="uc-sb-brand-name">UniCore</span>
+                <span className="uc-sb-brand-sub">Operational Hub</span>
               </div>
             </div>
 
-            {/* ── Stats row ── */}
-            <div className="stats-row" style={S.statsRow}>
-              <BookingStatsCard title="Total Bookings" count={loading ? '—' : stats.total}    icon="📋" />
-              <BookingStatsCard title="Approved"       count={loading ? '—' : stats.approved} icon="✅" accentColor="#166534" />
-              <BookingStatsCard title="Pending"        count={loading ? '—' : stats.pending}  icon="⏳" accentColor="#B45309" />
+            {/* Nav */}
+            <nav className="uc-sb-nav">
+              <div className="uc-sb-item active">
+                <IconCalendar />
+                My Bookings
+              </div>
+            </nav>
+
+            {/* Footer */}
+            <div className="uc-sb-footer">
+              <button className="uc-logout">
+                <IconLogout />
+                Logout
+              </button>
             </div>
 
-            {/* ── Bookings table ── */}
-            <div style={S.sectionCard}>
-              <div style={S.sectionHeader}>
-                <h2 style={S.sectionTitle}>My Recent Bookings</h2>
+          </aside>
+
+          {/* ── Main ── */}
+          <main className="uc-main">
+            <div className="uc-content">
+
+              {/* Page heading */}
+              <div style={{ marginBottom: '28px' }}>
+                <h1 style={{ fontFamily: 'Manrope, sans-serif', fontSize: '28px', fontWeight: 800, color: '#110755', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+                  Welcome, Student
+                </h1>
+                <p style={{ fontSize: '14px', color: '#6B7280', marginTop: '6px', fontFamily: 'Inter, sans-serif' }}>
+                  Here's an overview of your facility bookings.
+                </p>
               </div>
 
-              <div style={S.tableWrap}>
-                {loading && (
-                  <div style={S.stateBox}>Loading your bookings…</div>
-                )}
+              {/* Stat cards */}
+              <div style={{ display: 'flex', gap: '20px', marginBottom: '28px', flexWrap: 'wrap' }}>
+                <StatCard title="Total Bookings" count={loading ? '—' : stats.total}    icon="📋" accentColor="#F57923" />
+                <StatCard title="Approved"       count={loading ? '—' : stats.approved} icon="✅" accentColor="#10B981" />
+                <StatCard title="Pending"        count={loading ? '—' : stats.pending}  icon="⏳" accentColor="#F57923" />
+              </div>
 
-                {!loading && error && (
-                  <div style={{ ...S.stateBox, color: '#991B1B' }}>{error}</div>
-                )}
+              {/* Bookings table card */}
+              <div style={{ background: '#fff', borderRadius: '16px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
 
-                {!loading && !error && bookings.length === 0 && (
-                  <div style={S.stateBox}>No bookings yet. Create your first booking!</div>
-                )}
+                {/* Card header */}
+                <div style={{ padding: '22px 24px 18px', borderBottom: '1px solid #F3F4F6' }}>
+                  <h2 style={{ fontFamily: 'Manrope, sans-serif', fontSize: '18px', fontWeight: 700, color: '#110755', margin: 0 }}>
+                    My Recent Bookings
+                  </h2>
+                </div>
 
-                {!loading && !error && bookings.length > 0 && (
-                  <table style={S.table}>
-                    <thead>
-                      <tr>
-                        {['Resource ID', 'Start Time', 'End Time', 'Purpose', 'Status', 'Actions'].map((h) => (
-                          <th key={h} style={S.th}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {bookings.map((b, i) => (
-                        <tr
-                          key={b.id}
-                          style={{ background: i % 2 === 0 ? '#fff' : '#FAFBFF' }}
-                          onMouseOver={(e)  => (e.currentTarget.style.background = '#F0F4FF')}
-                          onMouseOut={(e)   => (e.currentTarget.style.background = i % 2 === 0 ? '#fff' : '#FAFBFF')}
-                        >
-                          <td style={{ ...S.td, fontFamily: 'Manrope, sans-serif', fontWeight: 700, color: '#110755' }}>
-                            #{b.resourceId ?? b.id}
-                          </td>
-                          <td style={{ ...S.td, whiteSpace: 'nowrap' }}>{formatDateTime(b.startDateTime)}</td>
-                          <td style={{ ...S.td, whiteSpace: 'nowrap' }}>{formatDateTime(b.endDateTime)}</td>
-                          <td style={{ ...S.td, maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {b.purpose}
-                          </td>
-                          <td style={S.td}>
-                            <StatusBadge status={b.status} />
-                          </td>
-                          <td style={S.td}>
-                            {b.status === 'APPROVED' && (
-                              <button
-                                style={S.btnCancel}
-                                onClick={() => openCancelModal(b.id)}
-                                onMouseOver={(e) => (e.currentTarget.style.opacity = '0.8')}
-                                onMouseOut={(e)  => (e.currentTarget.style.opacity = '1')}
-                              >
-                                Cancel
-                              </button>
-                            )}
-                            {b.status !== 'APPROVED' && (
-                              <span style={{ color: '#D1D5DB', fontSize: '0.8rem' }}>—</span>
-                            )}
-                          </td>
+                {/* Table */}
+                <div style={{ overflowX: 'auto' }}>
+
+                  {loading && (
+                    <div style={{ padding: '56px 20px', textAlign: 'center', color: '#9CA3AF', fontSize: '14px' }}>
+                      Loading your bookings…
+                    </div>
+                  )}
+                  {!loading && error && (
+                    <div style={{ padding: '56px 20px', textAlign: 'center', color: '#991B1B', fontSize: '14px' }}>
+                      {error}
+                    </div>
+                  )}
+                  {!loading && !error && bookings.length === 0 && (
+                    <div style={{ padding: '56px 20px', textAlign: 'center', color: '#9CA3AF', fontSize: '14px' }}>
+                      No bookings yet.
+                    </div>
+                  )}
+
+                  {!loading && !error && bookings.length > 0 && (
+                    <table className="uc-table">
+                      <thead>
+                        <tr>
+                          {['Resource ID', 'Start Time', 'End Time', 'Purpose', 'Status', 'Actions'].map((h) => (
+                            <th key={h} className="uc-th">{h}</th>
+                          ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
+                      </thead>
+                      <tbody>
+                        {bookings.map((b) => (
+                          <tr key={b.id} className="uc-tr">
+                            <td className="uc-td" style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, color: '#110755' }}>
+                              #{b.resourceId ?? b.id}
+                            </td>
+                            <td className="uc-td" style={{ whiteSpace: 'nowrap' }}>{formatDateTime(b.startDateTime)}</td>
+                            <td className="uc-td" style={{ whiteSpace: 'nowrap' }}>{formatDateTime(b.endDateTime)}</td>
+                            <td className="uc-td" style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {b.purpose}
+                            </td>
+                            <td className="uc-td"><StatusBadge status={b.status} /></td>
+                            <td className="uc-td">
+                              {b.status === 'APPROVED' ? (
+                                <button
+                                  onClick={() => openCancelModal(b.id)}
+                                  style={{
+                                    padding: '6px 16px', borderRadius: '999px',
+                                    background: 'linear-gradient(135deg, #F57923, #fe802a)',
+                                    color: '#fff', fontSize: '12px', fontWeight: 600,
+                                    border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                                    boxShadow: '0 2px 8px rgba(245,121,35,0.3)',
+                                    transition: 'opacity 0.15s',
+                                  }}
+                                  onMouseOver={(e) => (e.currentTarget.style.opacity = '0.85')}
+                                  onMouseOut={(e)  => (e.currentTarget.style.opacity = '1')}
+                                >
+                                  Cancel
+                                </button>
+                              ) : (
+                                <span style={{ color: '#D1D5DB', fontSize: '14px' }}>—</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
               </div>
-            </div>
 
-          </div>
-        </main>
+            </div>
+          </main>
+
+        </div>
       </div>
 
-      {/* ── Cancel modal ── */}
+      {/* ══ Cancel modal ════════════════════════════════════════════════════ */}
       {cancelModal.open && (
-        <div style={S.overlay} onClick={closeCancelModal}>
-          <div style={S.modal} onClick={(e) => e.stopPropagation()}>
+        <div
+          onClick={closeCancelModal}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(17,7,85,0.3)', backdropFilter: 'blur(4px)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+        >
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: '20px', padding: '32px', width: '100%', maxWidth: '440px', boxShadow: '0 24px 48px rgba(17,7,85,0.15)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
-              <h3 style={S.modalTitle}>Cancel Booking</h3>
-              <p style={S.modalSub}>Optionally provide a reason for cancelling.</p>
+              <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '18px', color: '#110755', margin: '0 0 6px' }}>Cancel Booking</h3>
+              <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>Optionally provide a reason for cancelling.</p>
             </div>
-
             <textarea
-              style={S.textarea}
               placeholder="Reason for cancellation (optional, max 500 chars)"
               maxLength={500}
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
+              style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid #E5E7EB', background: '#FAFAFA', fontSize: '14px', fontFamily: 'Inter, sans-serif', color: '#374151', resize: 'vertical', minHeight: '90px', outline: 'none', boxSizing: 'border-box' }}
             />
-
-            {cancelError && (
-              <p style={{ color: '#991B1B', fontSize: '0.82rem', margin: 0 }}>{cancelError}</p>
-            )}
-
-            <div style={S.modalActions}>
-              <button style={S.btnGhost} onClick={closeCancelModal} disabled={cancelling}>
+            {cancelError && <p style={{ color: '#991B1B', fontSize: '13px', margin: 0 }}>{cancelError}</p>}
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={closeCancelModal} disabled={cancelling}
+                style={{ padding: '10px 20px', borderRadius: '10px', background: '#F3F4F6', color: '#374151', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '14px', border: 'none', cursor: 'pointer' }}
+              >
                 Keep Booking
               </button>
               <button
-                style={{ ...S.btnPrimary, opacity: cancelling ? 0.7 : 1 }}
-                onClick={confirmCancel}
-                disabled={cancelling}
+                onClick={confirmCancel} disabled={cancelling}
+                style={{ padding: '10px 22px', borderRadius: '10px', background: 'linear-gradient(135deg,#F57923,#fe802a)', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '14px', border: 'none', cursor: 'pointer', opacity: cancelling ? 0.7 : 1, boxShadow: '0 4px 12px rgba(245,121,35,0.35)' }}
               >
                 {cancelling ? 'Cancelling…' : 'Confirm Cancel'}
               </button>
