@@ -6,11 +6,22 @@ const navigationItems = [
   { icon: 'group', label: 'User Management', key: 'user-management' },
 ];
 
-export default function AdminSidebar({ collapsed = false, activeSection = 'dashboard', onHome, onNavigateSection, onToggleCollapse }) {
+export default function AdminSidebar({
+  className = '',
+  collapsed = false,
+  activeSection = 'dashboard',
+  navigationItems: customNavigationItems,
+  onHome,
+  onNavigateSection,
+  onToggleCollapse,
+}) {
+  const items = customNavigationItems ?? navigationItems;
+
   return (
     <aside
       className={[
         'sticky top-28 flex h-[calc(100vh-7rem)] flex-col rounded-3xl border border-[#272269]/10 bg-white/40 py-6 shadow-xl backdrop-blur-2xl z-40 transition-all duration-300 overflow-hidden',
+        className,
         collapsed ? 'w-20' : 'w-64',
       ].join(' ')}
     >
@@ -31,7 +42,7 @@ export default function AdminSidebar({ collapsed = false, activeSection = 'dashb
       </div>
 
       <nav className={collapsed ? 'flex-1 space-y-1 px-2' : 'flex-1 space-y-1 px-4'}>
-        {navigationItems.map((item) => (
+        {items.map((item) => (
           <button
             key={item.label}
             className={[

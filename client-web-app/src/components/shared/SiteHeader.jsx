@@ -20,7 +20,15 @@ function getFullName(currentUser) {
   return typeof currentUser.email === 'string' ? currentUser.email.split('@')[0] : '';
 }
 
-export default function SiteHeader({ className = '', onHome, onLogin, onSignup, onOpenDashboard, onLogout }) {
+export default function SiteHeader({
+  className = '',
+  onHome,
+  onLogin,
+  onSignup,
+  onOpenDashboard,
+  onOpenBookings,
+  onLogout,
+}) {
   const authSession = getAuthSession();
   const currentUser = authSession?.user || null;
   const isLoggedIn = Boolean(authSession?.accessToken && currentUser);
@@ -67,7 +75,13 @@ export default function SiteHeader({ className = '', onHome, onLogin, onSignup, 
 
   const handleDashboard = () => {
     setIsUserMenuOpen(false);
-    onOpenDashboard?.();
+
+    if (currentUser?.role === 'ADMIN') {
+      onOpenDashboard?.();
+      return;
+    }
+
+    onOpenBookings?.();
   };
 
   const HomeControl = onHome ? (
@@ -120,7 +134,7 @@ export default function SiteHeader({ className = '', onHome, onLogin, onSignup, 
 
             {isUserMenuOpen ? (
               <div className="landing-user-menu__dropdown" role="menu" aria-label="User menu">
-                {currentUser.role === 'ADMIN' ? (
+                {currentUser.role === 'ADMIN' || onOpenBookings ? (
                   <button className="landing-user-menu__item" type="button" role="menuitem" onClick={handleDashboard}>
                     Dashboard
                   </button>

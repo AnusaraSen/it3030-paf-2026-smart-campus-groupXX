@@ -50,7 +50,7 @@ function App() {
       ) : activeView === 'adminDashboard' ? (
         <AdminDashboardView onHome={showLanding} onLogout={handleLogout} onOpenDashboard={showDashboard} />
       ) : activeView === 'bookings' ? (
-        <UserDashboard />
+        <UserDashboard onHome={showLanding} onLogout={handleLogout} />
       ) : (
         <LandingView onLogin={showLogin} onSignup={showSignup} onOpenDashboard={showDashboard} onLogout={handleLogout} onOpenBookings={showBookings} />
       )}

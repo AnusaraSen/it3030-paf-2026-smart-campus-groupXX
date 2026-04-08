@@ -2,6 +2,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "BackendApplication",
+            "request": "launch",
+            "mainClass": "com.smartcampus.backend.BackendApplication",
+            "projectName": "server-api"
+        },
+        {
+            "type": "java",
             "name": "Spring Boot-ServerApiApplication<server-api>",
             "request": "launch",
             "cwd": "${workspaceFolder}",
