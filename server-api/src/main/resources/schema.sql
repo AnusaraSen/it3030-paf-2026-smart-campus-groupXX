@@ -1,0 +1,10 @@
+ALTER TABLE users
+  MODIFY COLUMN role VARCHAR(20) NOT NULL DEFAULT 'USERS';
+
+UPDATE users
+SET role = 'USERS'
+WHERE role = 'STUDENT';
+
+UPDATE users
+SET role = 'TECHNICIAN'
+WHERE role = 'STAFF';
