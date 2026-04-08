@@ -34,7 +34,6 @@ public class TicketController {
     private final ObjectMapper objectMapper;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<TicketResponse> createTicket(
             @RequestPart("data") String dataJson,
             @RequestPart(value = "files", required = false) List<MultipartFile> files,
@@ -75,7 +74,6 @@ public class TicketController {
     }
 
     @GetMapping("/my")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Page<TicketSummaryResponse>> getMyTickets(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -106,7 +104,6 @@ public class TicketController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<TicketResponse> getTicket(@PathVariable Long id) {
         return ResponseEntity.ok(ticketService.getTicketById(id));
     }
@@ -137,7 +134,6 @@ public class TicketController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Void> deleteTicket(
             @PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
         Long userId = extractUserId(userDetails);
@@ -146,7 +142,6 @@ public class TicketController {
     }
 
     @PostMapping("/{id}/comments")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CommentResponse> addComment(
             @PathVariable Long id,
             @Valid @RequestBody AddCommentRequest request,

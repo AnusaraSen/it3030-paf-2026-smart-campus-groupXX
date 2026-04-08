@@ -4,11 +4,13 @@ import org.springframework.http.*;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.stereotype.Component;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.*;
 
 @RestControllerAdvice
+@Component("ticketGlobalExceptionHandler")
 public class GlobalExceptionHandler {
 
     private Map<String, Object> buildError(int status, String error,

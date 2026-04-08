@@ -2,6 +2,7 @@ package com.smartcampus.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -25,8 +26,11 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
-                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
-                .httpBasic(Customizer.withDefaults());
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/**").permitAll()
+                        .anyRequest().authenticated())
+                // Demo mode: ticket UI should work even if Authorization header is present.
+                .httpBasic(basic -> basic.disable());
         return http.build();
     }
 
@@ -43,19 +47,17 @@ public class SecurityConfig {
     }
 
     @Bean
+    @Primary
     public UserDetailsService userDetailsService() {
-        var user = User.withDefaultPasswordEncoder()
-                .username("user")
+        var user = User.withUsername("user")
                 .password("password")
                 .roles("USER")
                 .build();
-        var admin = User.withDefaultPasswordEncoder()
-                .username("admin")
+        var admin = User.withUsername("admin")
                 .password("password")
                 .roles("ADMIN")
                 .build();
-        var tech = User.withDefaultPasswordEncoder()
-                .username("tech")
+        var tech = User.withUsername("tech")
                 .password("password")
                 .roles("TECHNICIAN")
                 .build();

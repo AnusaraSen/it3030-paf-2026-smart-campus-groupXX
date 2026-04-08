@@ -6,7 +6,6 @@ import com.smartcampus.service.ticket.TicketService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +18,6 @@ public class CommentController {
     private final TicketService ticketService;
 
     @PutMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CommentResponse> editComment(
             @PathVariable Long id,
             @Valid @RequestBody AddCommentRequest request,
@@ -30,13 +28,16 @@ public class CommentController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> deleteComment(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetails userDetails) {
         Long userId = extractUserId(userDetails);
-        String role = userDetails.getAuthorities()
-            .iterator().next().getAuthority();
+        // Frontend user flow may hit this without a principal (temporary demo mode).
+        String role = "ROLE_USER";
+        if (userDetails != null && userDetails.getAuthorities() != null
+                && !userDetails.getAuthorities().isEmpty()) {
+            role = userDetails.getAuthorities().iterator().next().getAuthority();
+        }
         ticketService.deleteComment(id, userId, role);
         return ResponseEntity.noContent().build();
     }
