@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { clearAuthSession, getAuthSession } from '../../api/authApi';
 
-export default function SiteHeader({ className = '', onHome, onLogin, onSignup, onOpenDashboard, onLogout, onTickets }) {
+export default function SiteHeader({ className = '', onHome, onLogin, onSignup, onOpenDashboard, onLogout, onTickets, onBookings }) {
   const authSession = getAuthSession();
   const currentUser = authSession?.user || null;
   const isLoggedIn = Boolean(authSession?.accessToken && currentUser);
@@ -69,9 +69,15 @@ export default function SiteHeader({ className = '', onHome, onLogin, onSignup, 
 
       <nav aria-label="Primary" className="nav-links">
         {HomeControl}
-        <a className="nav-link" href="#bookings">
-          Bookings
-        </a>
+        {onBookings ? (
+          <button className="nav-link nav-link--button" type="button" onClick={onBookings}>
+            Bookings
+          </button>
+        ) : (
+          <a className="nav-link" href="#bookings">
+            Bookings
+          </a>
+        )}
         {onTickets ? (
           <button className="nav-link nav-link--button" type="button" onClick={onTickets}>
             Tickets

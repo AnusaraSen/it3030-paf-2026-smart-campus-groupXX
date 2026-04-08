@@ -9,6 +9,7 @@ import LoginView from './views/auth/LoginView';
 import SignupView from './views/auth/SignupView';
 import AdminDashboardView from './views/dashboard/AdminDashboardView';
 import TechnicianDashboardView from './views/dashboard/TechnicianDashboardView';
+import BookingsDashboardView from './views/dashboard/BookingsDashboardView';
 import { clearAuthSession, getAuthSession } from './api/authApi';
 import './styles/uniCore.css';
 
@@ -22,13 +23,16 @@ function LandingRoute() {
     }
     if (role === 'TECHNICIAN') {
       navigate('/technician-dashboard');
+      return;
     }
+    navigate('/bookings-dashboard');
   };
 
   return (
     <LandingView
       onHome={() => navigate('/')}
       onTickets={() => navigate('/tickets')}
+      onBookings={() => navigate('/bookings-dashboard')}
       onLogin={() => navigate('/login')}
       onSignup={() => navigate('/signup')}
       onOpenDashboard={openDashboardByRole}
@@ -56,7 +60,7 @@ function LoginRoute() {
           navigate('/admin-dashboard');
           return;
         }
-        navigate('/');
+        navigate('/bookings-dashboard');
       }}
     />
   );
@@ -74,7 +78,7 @@ function SignupRoute() {
 
 function Layout({ children }) {
   const { pathname } = useLocation();
-  if (pathname === '/' || pathname === '/admin-dashboard' || pathname === '/technician-dashboard') {
+  if (pathname === '/' || pathname === '/admin-dashboard' || pathname === '/technician-dashboard' || pathname === '/bookings-dashboard') {
     return <>{children}</>;
   }
   const ticketSectionActive = pathname.startsWith('/tickets');
@@ -120,6 +124,10 @@ function AppRoutes() {
         <Route
           path="/technician-dashboard"
           element={<TechnicianDashboardView onHome={() => navigate('/')} onLogout={handleLogout} />}
+        />
+        <Route
+          path="/bookings-dashboard"
+          element={<BookingsDashboardView onHome={() => navigate('/')} onLogout={handleLogout} />}
         />
         <Route path="/tickets" element={<TicketsHubPage />}>
           <Route index element={<TicketsOverview />} />
