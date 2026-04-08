@@ -9,7 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.*;
 
-@RestControllerAdvice
+@RestControllerAdvice(basePackages = "com.smartcampus.controller.ticket")
 @Component("ticketGlobalExceptionHandler")
 public class GlobalExceptionHandler {
 
