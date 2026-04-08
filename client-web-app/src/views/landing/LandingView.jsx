@@ -27,7 +27,7 @@ const featureCards = [
 const campusImageUrl =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuBTmCu8_MCWlAFSe7u3fXg8BjbJ0OgQ3E_vVy1--tswxDkqjhvUPGRoNYQrydbwK8YeKYDRpiBsVF2GGYqPFtHGkFYVz0uRbvYYlfXRFdoV1RieEEMDFxurQ1WipXWg02hx3wdDXOeEoeEID0VW1YWvl8y-ggej0-QB2nWpvNszdNkWgKlPoODvtp3FhhqpWnCcChFBmGUU9qHgNhJU21i4LRe7nm3liD9p6kVFkZ6tj9HP2AfCdt_YPgMxiUDQEveVQV1Lk5XNIR8';
 
-export default function LandingView({ onLogin, onSignup, onOpenDashboard, onLogout }) {
+export default function LandingView({ onLogin, onSignup, onOpenDashboard, onOpenBookings, onLogout }) {
   const scrollToFeatures = () => {
     const element = document.getElementById('features');
     if (element) {
@@ -37,7 +37,13 @@ export default function LandingView({ onLogin, onSignup, onOpenDashboard, onLogo
 
   return (
     <div className="uc-shell landing-screen">
-      <SiteHeader onLogin={onLogin} onSignup={onSignup} onOpenDashboard={onOpenDashboard} onLogout={onLogout} />
+      <SiteHeader
+        onLogin={onLogin}
+        onSignup={onSignup}
+        onOpenDashboard={onOpenDashboard}
+        onOpenBookings={onOpenBookings}
+        onLogout={onLogout}
+      />
 
       <main className="landing-main" id="home">
         <section className="hero-section">

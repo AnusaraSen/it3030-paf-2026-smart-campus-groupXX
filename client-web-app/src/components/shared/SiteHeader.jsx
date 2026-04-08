@@ -1,7 +1,34 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { clearAuthSession, getAuthSession } from '../../api/authApi';
 
-export default function SiteHeader({ className = '', onHome, onLogin, onSignup, onOpenDashboard, onLogout }) {
+function getFullName(currentUser) {
+  if (!currentUser) {
+    return '';
+  }
+
+  const firstName = typeof currentUser.firstName === 'string' ? currentUser.firstName.trim() : '';
+  const lastName = typeof currentUser.lastName === 'string' ? currentUser.lastName.trim() : '';
+
+  if (firstName || lastName) {
+    return [firstName, lastName].filter(Boolean).join(' ');
+  }
+
+  if (typeof currentUser.name === 'string' && currentUser.name.trim()) {
+    return currentUser.name.trim();
+  }
+
+  return typeof currentUser.email === 'string' ? currentUser.email.split('@')[0] : '';
+}
+
+export default function SiteHeader({
+  className = '',
+  onHome,
+  onLogin,
+  onSignup,
+  onOpenDashboard,
+  onOpenBookings,
+  onLogout,
+}) {
   const authSession = getAuthSession();
   const currentUser = authSession?.user || null;
   const isLoggedIn = Boolean(authSession?.accessToken && currentUser);
@@ -48,7 +75,13 @@ export default function SiteHeader({ className = '', onHome, onLogin, onSignup, 
 
   const handleDashboard = () => {
     setIsUserMenuOpen(false);
-    onOpenDashboard?.();
+
+    if (currentUser?.role === 'ADMIN') {
+      onOpenDashboard?.();
+      return;
+    }
+
+    onOpenBookings?.();
   };
 
   const HomeControl = onHome ? (
@@ -94,14 +127,14 @@ export default function SiteHeader({ className = '', onHome, onLogin, onSignup, 
               onClick={() => setIsUserMenuOpen((currentValue) => !currentValue)}
             >
               <span className="landing-user-chip__name">
-                {currentUser.firstName} {currentUser.lastName}
+                {getFullName(currentUser)}
               </span>
               <span className="landing-user-chip__role">{currentUser.role}</span>
             </button>
 
             {isUserMenuOpen ? (
               <div className="landing-user-menu__dropdown" role="menu" aria-label="User menu">
-                {currentUser.role === 'ADMIN' ? (
+                {currentUser.role === 'ADMIN' || onOpenBookings ? (
                   <button className="landing-user-menu__item" type="button" role="menuitem" onClick={handleDashboard}>
                     Dashboard
                   </button>

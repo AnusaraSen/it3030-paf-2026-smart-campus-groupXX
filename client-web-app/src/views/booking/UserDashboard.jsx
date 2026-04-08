@@ -1,456 +1,679 @@
-import { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import useBookings from '../../viewmodels/useBookings';
 import StatusBadge from '../../components/booking/StatusBadge';
-
-// ── SVG Icons ────────────────────────────────────────────────────────────────
-
-const IconCalendar = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="4" width="18" height="18" rx="2" />
-    <line x1="16" y1="2" x2="16" y2="6" />
-    <line x1="8" y1="2" x2="8" y2="6" />
-    <line x1="3" y1="10" x2="21" y2="10" />
-  </svg>
-);
-
-const IconLogout = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-    <polyline points="16 17 21 12 16 7" />
-    <line x1="21" y1="12" x2="9" y2="12" />
-  </svg>
-);
-
-const IconChevronDown = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="6 9 12 15 18 9" />
-  </svg>
-);
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
+import { clearAuthSession, getAuthSession, updateStoredAuthUser, updateUserById } from '../../api/authApi';
+import SiteHeader from '../../components/shared/SiteHeader.jsx';
+import UserSidebar from '../../components/user-dashboard/UserSidebar.jsx';
 
 const formatDateTime = (iso) => {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  return d.toLocaleString('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
+  if (!iso) {
+    return '—';
+  }
+
+  const date = new Date(iso);
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 };
 
-// ── Stat Card ─────────────────────────────────────────────────────────────────
+const getDisplayName = (currentUser) => {
+  if (!currentUser) {
+    return 'Student';
+  }
+
+  const firstName = typeof currentUser.firstName === 'string' ? currentUser.firstName.trim() : '';
+  const lastName = typeof currentUser.lastName === 'string' ? currentUser.lastName.trim() : '';
+
+  if (firstName || lastName) {
+    return [firstName, lastName].filter(Boolean).join(' ');
+  }
+
+  if (typeof currentUser.name === 'string' && currentUser.name.trim()) {
+    return currentUser.name.trim();
+  }
+
+  return typeof currentUser.email === 'string' && currentUser.email.includes('@')
+    ? currentUser.email.split('@')[0]
+    : 'Student';
+};
+
+const formatValue = (value) => {
+  if (value === null || typeof value === 'undefined' || value === '') {
+    return 'Not provided';
+  }
+
+  return String(value);
+};
+
+const getRoleLabel = (currentUser) => {
+  if (!currentUser?.role) {
+    return 'Student';
+  }
+
+  return currentUser.role;
+};
+
+const buildEditForm = (user) => ({
+  firstName: user?.firstName || '',
+  lastName: user?.lastName || '',
+  email: user?.email || '',
+  password: '',
+  confirmPassword: '',
+});
 
 const StatCard = ({ title, count, icon, accentColor }) => (
-  <div style={{
-    flex: 1, minWidth: '160px',
-    background: '#fff',
-    borderRadius: '16px',
-    padding: '24px',
-    boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-    display: 'flex', flexDirection: 'column',
-  }}>
-    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
-      <span style={{ fontSize: '11px', fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'Inter, sans-serif' }}>
-        {title}
+  <div className="flex min-w-[160px] flex-1 flex-col rounded-3xl border border-white/50 bg-white/70 p-6 shadow-xl shadow-[#272269]/5 backdrop-blur-2xl">
+    <div className="mb-4 flex items-start justify-between">
+      <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#272269]/40">{title}</span>
+      <span
+        aria-hidden="true"
+        className="material-symbols-outlined text-[28px] leading-none text-[#272269]"
+        style={{ fontVariationSettings: "'FILL' 1" }}
+      >
+        {icon}
       </span>
-      <span style={{ fontSize: '22px', lineHeight: 1 }}>{icon}</span>
     </div>
-    <div style={{ fontSize: '36px', fontWeight: 800, fontFamily: 'Manrope, sans-serif', color: '#110755', lineHeight: 1, marginBottom: '14px' }}>
-      {count}
-    </div>
-    <div style={{ height: '3px', width: '40px', borderRadius: '999px', background: accentColor }} />
+    <div className="mb-4 font-headline text-4xl font-black leading-none text-[#272269]">{count}</div>
+    <div className="h-1 w-10 rounded-full" style={{ background: accentColor }} />
   </div>
 );
 
-// ── Component ────────────────────────────────────────────────────────────────
+export default function UserDashboard({ onHome, onLogout }) {
+  const authSession = getAuthSession();
+  const [profileUser, setProfileUser] = useState(() => authSession?.user || null);
+  const currentUser = profileUser;
+  const isAuthenticated = Boolean(authSession?.accessToken && currentUser);
+  const displayName = getDisplayName(currentUser);
 
-const UserDashboard = () => {
   const { bookings, loading, error, stats, handleCancel } = useBookings();
-  const [activeNav, setActiveNav] = useState('Bookings');
-
+  const [activeSection, setActiveSection] = useState('dashboard');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [editForm, setEditForm] = useState(() => buildEditForm(currentUser));
   const [cancelModal, setCancelModal] = useState({ open: false, bookingId: null });
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState('');
 
-  const openCancelModal  = (id) => { setCancelModal({ open: true, bookingId: id }); setCancelReason(''); setCancelError(''); };
-  const closeCancelModal = ()   => { setCancelModal({ open: false, bookingId: null }); setCancelling(false); setCancelError(''); };
+  const isGoogleAccount = currentUser?.provider === 'GOOGLE';
+  const canEditProfile = !isGoogleAccount;
 
-  const confirmCancel = async () => {
-    setCancelling(true); setCancelError('');
-    try   { await handleCancel(cancelModal.bookingId, cancelReason); closeCancelModal(); }
-    catch (err) { setCancelError(err.message); setCancelling(false); }
+  const handleLogout = useCallback(() => {
+    if (onLogout) {
+      onLogout();
+      return;
+    }
+
+    clearAuthSession();
+    window.location.reload();
+  }, [onLogout]);
+
+  const handleOpenDashboard = useCallback(() => {
+    setActiveSection('dashboard');
+  }, []);
+
+  const handleOpenUserInformation = useCallback(() => {
+    setActiveSection('user-information');
+  }, []);
+
+  const openEditModal = useCallback(() => {
+    setEditError('');
+    setEditForm(buildEditForm(currentUser));
+    setEditModalOpen(true);
+  }, [currentUser]);
+
+  const closeEditModal = useCallback(() => {
+    setEditModalOpen(false);
+    setEditSaving(false);
+    setEditError('');
+  }, []);
+
+  const handleEditSubmit = useCallback(async (event) => {
+    event.preventDefault();
+
+    if (!currentUser?.id) {
+      setEditError('User information is unavailable.');
+      return;
+    }
+
+    if (!canEditProfile) {
+      setEditError('Google-linked accounts cannot edit these fields here.');
+      return;
+    }
+
+    const nextFirstName = editForm.firstName.trim();
+    const nextLastName = editForm.lastName.trim();
+    const nextEmail = editForm.email.trim().toLowerCase();
+    const nextPassword = editForm.password.trim();
+
+    if (!nextFirstName || !nextLastName || !nextEmail) {
+      setEditError('First name, last name, and email are required.');
+      return;
+    }
+
+    if (editForm.password || editForm.confirmPassword) {
+      if (editForm.password !== editForm.confirmPassword) {
+        setEditError('Password confirmation does not match.');
+        return;
+      }
+    }
+
+    setEditSaving(true);
+    setEditError('');
+
+    try {
+      const payload = {
+        firstName: nextFirstName,
+        lastName: nextLastName,
+        email: nextEmail,
+      };
+
+      if (nextPassword) {
+        payload.password = nextPassword;
+      }
+
+      const updatedUser = await updateUserById(currentUser.id, payload, authSession?.accessToken || '');
+      const mergedUser = {
+        ...currentUser,
+        ...updatedUser,
+      };
+
+      if (nextPassword || nextEmail !== currentUser.email) {
+        closeEditModal();
+        handleLogout();
+        return;
+      }
+
+      setProfileUser(mergedUser);
+      updateStoredAuthUser(mergedUser);
+      setEditModalOpen(false);
+    } catch (error) {
+      setEditError(error instanceof Error ? error.message : 'Failed to update account information.');
+    } finally {
+      setEditSaving(false);
+    }
+  }, [authSession?.accessToken, canEditProfile, closeEditModal, currentUser, editForm, onLogout]);
+
+  const openCancelModal = (bookingId) => {
+    setCancelModal({ open: true, bookingId });
+    setCancelReason('');
+    setCancelError('');
   };
 
-  const NAV_LINKS = ['Home', 'Bookings', 'Tickets', 'Resources', 'FAQ'];
+  const closeCancelModal = () => {
+    setCancelModal({ open: false, bookingId: null });
+    setCancelling(false);
+    setCancelError('');
+  };
+
+  const confirmCancel = async () => {
+    setCancelling(true);
+    setCancelError('');
+
+    try {
+      await handleCancel(cancelModal.bookingId, cancelReason);
+      closeCancelModal();
+    } catch (err) {
+      setCancelError(err instanceof Error ? err.message : 'Failed to cancel booking.');
+      setCancelling(false);
+    }
+  };
+
+  const pendingBookings = useMemo(
+    () => bookings.filter((booking) => booking.status === 'PENDING').length,
+    [bookings],
+  );
+
+  const approvedBookings = useMemo(
+    () => bookings.filter((booking) => booking.status === 'APPROVED').length,
+    [bookings],
+  );
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_0%_0%,#E0E7FF_0%,#faf9f9_100%)] px-6 text-center">
+        <div className="glass-panel max-w-md rounded-3xl border border-white/50 p-8 shadow-xl">
+          <h1 className="font-headline text-3xl font-black text-[#272269]">Session Required</h1>
+          <p className="mt-3 text-sm text-[#272269]/70">Please sign in to view your dashboard.</p>
+          <button className="uc-button uc-button--primary uc-button--large mt-6" type="button" onClick={onHome}>
+            Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <>
-      {/* ── Global styles ─────────────────────────────────────────────────── */}
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { margin: 0; font-family: Inter, sans-serif; background: #E7ECFE; }
+    <div className="min-h-screen bg-[radial-gradient(circle_at_0%_0%,#E0E7FF_0%,#faf9f9_100%)] text-[#272269]">
+      <SiteHeader
+        className="landing-nav--dashboard"
+        onHome={onHome}
+        onOpenBookings={handleOpenDashboard}
+        onLogout={handleLogout}
+      />
 
-        /* ─ Header ─ */
-        .uc-header {
-          width: 100%; height: 70px;
-          background: #ffffff;
-          border-bottom: 1px solid #F3F4F6;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-          display: flex; align-items: center;
-          padding: 0 32px; gap: 0;
-          position: sticky; top: 0; z-index: 200; flex-shrink: 0;
-        }
+      <div className="flex gap-2 px-5 pb-6 pt-8">
+        <UserSidebar
+          className={activeSection === 'bookings' ? 'mt-20' : ''}
+          collapsed={isSidebarCollapsed}
+          activeSection={activeSection}
+          onHome={onHome}
+          onNavigateSection={(section) => {
+            if (section === 'dashboard') {
+              handleOpenDashboard();
+              return;
+            }
 
-        /* Logo block */
-        .uc-logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-        .uc-logo-circle {
-          width: 38px; height: 38px; border-radius: 11px;
-          background: #F57923;
-          display: flex; align-items: center; justify-content: center;
-          color: #fff; font-family: Manrope, sans-serif;
-          font-size: 1.1rem; font-weight: 800; flex-shrink: 0;
-          box-shadow: 0 4px 10px rgba(245,121,35,0.32);
-        }
-        .uc-logo-text { display: flex; flex-direction: column; line-height: 1; }
-        .uc-logo-name {
-          font-family: Manrope, sans-serif; font-size: 1.05rem;
-          font-weight: 800; color: #110755;
-        }
-        .uc-logo-sub {
-          font-size: 0.52rem; font-weight: 700;
-          letter-spacing: 0.16em; text-transform: uppercase;
-          color: #9CA3AF; margin-top: 3px;
-        }
+            if (section === 'user-information') {
+              handleOpenUserInformation();
+              return;
+            }
 
-        /* Nav */
-        .uc-nav { display: flex; align-items: center; gap: 2px; flex: 1; justify-content: center; }
-        .uc-nav-btn {
-          padding: 7px 14px; border-radius: 8px;
-          font-size: 0.875rem; font-weight: 500;
-          color: #6B7280; cursor: pointer;
-          border: none; background: transparent;
-          font-family: Inter, sans-serif;
-          transition: color 0.15s, background 0.15s;
-        }
-        .uc-nav-btn:hover { color: #110755; background: #F3F4F6; }
-        .uc-nav-btn.active { color: #F57923; font-weight: 700; background: #FFF7ED; }
+            setActiveSection(section);
+          }}
+          onToggleCollapse={() => setIsSidebarCollapsed((currentValue) => !currentValue)}
+        />
 
-        /* User chip */
-        .uc-user { display: flex; align-items: center; gap: 10px; flex-shrink: 0; cursor: pointer; }
-        .uc-user-info { text-align: right; line-height: 1; }
-        .uc-user-name { font-size: 0.875rem; font-weight: 700; color: #110755; font-family: Inter, sans-serif; }
-        .uc-user-role { font-size: 0.58rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #F57923; margin-top: 3px; }
-        .uc-avatar {
-          width: 36px; height: 36px; border-radius: 50%;
-          background: #F57923;
-          display: flex; align-items: center; justify-content: center;
-          font-family: Manrope, sans-serif; font-weight: 800;
-          font-size: 0.78rem; color: #fff; flex-shrink: 0;
-        }
-        .uc-chevron { color: #9CA3AF; display: flex; align-items: center; margin-left: 2px; }
+        <main className="relative flex min-h-[calc(100vh-7rem)] min-w-0 flex-1 flex-col overflow-y-auto">
+          <div className="space-y-10 px-4 pb-10 pt-16">
+            {activeSection === 'dashboard' ? (
+              <>
+                <section className="glass-panel relative overflow-hidden rounded-3xl border border-white/50 p-12 shadow-xl shadow-[#272269]/5">
+                  <div className="absolute right-[-50px] top-[-50px] h-96 w-96 rounded-full bg-[#F17620] aura-glow" />
+                  <div className="absolute bottom-[-100px] left-[10%] h-64 w-64 rounded-full bg-[#272269] aura-glow" />
+                  <div className="relative z-10 flex flex-col items-end justify-between gap-8 md:flex-row md:items-end">
+                    <div className="max-w-2xl">
+                      <span className="mb-4 inline-block rounded-full border border-[#F17620]/20 bg-[#F17620]/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#F17620]">
+                        Student Status: Active
+                      </span>
+                      <h2 className="mb-4 font-headline text-5xl font-extrabold leading-none tracking-tighter text-[#272269]">
+                        Welcome, <br />
+                        <span className="text-[#F17620]">{displayName}</span>
+                      </h2>
+                      <p className="max-w-lg font-medium text-[#272269]/70">
+                        Track your facility bookings, monitor approvals, and keep up with your active requests from one workspace.
+                      </p>
+                    </div>
 
-        /* ─ Layout ─ */
-        .uc-app  { display: flex; flex-direction: column; min-height: 100vh; }
-        .uc-body { display: flex; flex: 1; }
+                    <div className="flex gap-4">
+                      <div className="min-w-[140px] rounded-2xl border border-white bg-white/50 p-6 text-center shadow-sm">
+                        <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[#272269]/50">Total</p>
+                        <p className="font-headline text-3xl font-black text-[#272269]">{loading ? '...' : stats.total}</p>
+                      </div>
+                      <div className="min-w-[140px] rounded-2xl border border-white bg-white/50 p-6 text-center shadow-sm">
+                        <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[#272269]/50">Approved</p>
+                        <p className="font-headline text-3xl font-black text-[#F17620]">{loading ? '...' : approvedBookings}</p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
 
-        /* ─ Sidebar ─ */
-        .uc-sidebar {
-          width: 240px; min-width: 240px;
-          background: #ffffff;
-          box-shadow: 2px 0 8px rgba(0,0,0,0.05);
-          display: flex; flex-direction: column;
-          height: calc(100vh - 70px);
-          position: sticky; top: 70px;
-          overflow-y: auto;
-        }
-        .uc-sb-brand {
-          padding: 22px 18px 18px;
-          border-bottom: 1px solid #F3F4F6;
-          display: flex; align-items: center; gap: 10px;
-        }
-        .uc-sb-circle {
-          width: 34px; height: 34px; border-radius: 9px;
-          background: #F57923;
-          display: flex; align-items: center; justify-content: center;
-          color: #fff; font-family: Manrope, sans-serif;
-          font-size: 0.9rem; font-weight: 800; flex-shrink: 0;
-          box-shadow: 0 3px 8px rgba(245,121,35,0.28);
-        }
-        .uc-sb-brand-text { display: flex; flex-direction: column; line-height: 1; }
-        .uc-sb-brand-name { font-family: Manrope, sans-serif; font-weight: 800; font-size: 0.95rem; color: #110755; }
-        .uc-sb-brand-sub  { font-size: 0.5rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #9CA3AF; margin-top: 3px; }
+                <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                  <StatCard icon="calendar_month" title="Total Bookings" count={loading ? '—' : stats.total} accentColor="#F17620" />
+                  <StatCard icon="task_alt" title="Approved" count={loading ? '—' : approvedBookings} accentColor="#10B981" />
+                  <StatCard icon="hourglass_top" title="Pending" count={loading ? '—' : pendingBookings} accentColor="#F17620" />
+                </section>
 
-        .uc-sb-nav { flex: 1; padding: 12px 10px; display: flex; flex-direction: column; gap: 2px; }
-        .uc-sb-item {
-          display: flex; align-items: center; gap: 10px;
-          padding: 12px 16px;
-          font-size: 0.875rem; font-weight: 500;
-          font-family: Inter, sans-serif;
-          color: #374151; background: transparent;
-          border-left: 3px solid transparent;
-          border-radius: 0 8px 8px 0;
-          cursor: pointer; transition: all 0.15s;
-          user-select: none;
-        }
-        .uc-sb-item:hover { background: #F9FAFB; color: #110755; }
-        .uc-sb-item.active {
-          color: #F57923; background: #FFF7ED;
-          border-left: 3px solid #F57923;
-          font-weight: 600;
-        }
-
-        .uc-sb-footer { padding: 12px 10px 20px; border-top: 1px solid #F3F4F6; }
-        .uc-logout {
-          display: flex; align-items: center; gap: 10px;
-          padding: 12px 16px;
-          font-size: 0.875rem; font-weight: 500;
-          font-family: Inter, sans-serif;
-          color: #9CA3AF; background: transparent;
-          border: none; border-radius: 8px;
-          width: 100%; text-align: left; cursor: pointer;
-          transition: color 0.15s, background 0.15s;
-        }
-        .uc-logout:hover { color: #F57923; background: #FFF7ED; }
-
-        /* ─ Main ─ */
-        .uc-main    { flex: 1; min-width: 0; }
-        .uc-content { padding: 32px; }
-
-        /* ─ Table ─ */
-        .uc-table { width: 100%; border-collapse: collapse; font-size: 14px; font-family: Inter, sans-serif; }
-        .uc-th {
-          padding: 12px 20px; text-align: left;
-          font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
-          text-transform: uppercase; color: #9CA3AF;
-          background: #F9FAFB; white-space: nowrap;
-        }
-        .uc-td { padding: 15px 20px; color: #374151; vertical-align: middle; border-bottom: 1px solid #F3F4F6; }
-        .uc-tr:last-child .uc-td { border-bottom: none; }
-        .uc-tr:hover .uc-td { background: #F9FAFB; }
-
-        /* ─ Responsive ─ */
-        @media (max-width: 900px) { .uc-nav { display: none; } }
-        @media (max-width: 767px) { .uc-sidebar { display: none; } .uc-content { padding: 20px 16px; } }
-      `}</style>
-
-      <div className="uc-app">
-
-        {/* ══ Header ══════════════════════════════════════════════════════════ */}
-        <header className="uc-header">
-
-          {/* Logo */}
-          <div className="uc-logo">
-            <div className="uc-logo-circle">U</div>
-            <div className="uc-logo-text">
-              <span className="uc-logo-name">UniCore</span>
-              <span className="uc-logo-sub">Operational Hub</span>
-            </div>
-          </div>
-
-          {/* Nav */}
-          <nav className="uc-nav">
-            {NAV_LINKS.map((link) => (
-              <button
-                key={link}
-                className={`uc-nav-btn${activeNav === link ? ' active' : ''}`}
-                onClick={() => setActiveNav(link)}
-              >
-                {link}
-              </button>
-            ))}
-          </nav>
-
-          {/* User */}
-          <div className="uc-user">
-            <div className="uc-user-info">
-              <div className="uc-user-name">User</div>
-              <div className="uc-user-role">User</div>
-            </div>
-            <div className="uc-avatar">SU</div>
-            <span className="uc-chevron"><IconChevronDown /></span>
-          </div>
-
-        </header>
-
-        {/* ══ Body ════════════════════════════════════════════════════════════ */}
-        <div className="uc-body">
-
-          {/* ── Sidebar ── */}
-          <aside className="uc-sidebar">
-
-            {/* Brand */}
-            <div className="uc-sb-brand">
-              <div className="uc-sb-circle">U</div>
-              <div className="uc-sb-brand-text">
-                <span className="uc-sb-brand-name">UniCore</span>
-                <span className="uc-sb-brand-sub">Operational Hub</span>
-              </div>
-            </div>
-
-            {/* Nav */}
-            <nav className="uc-sb-nav">
-              <div className="uc-sb-item active">
-                <IconCalendar />
-                My Bookings
-              </div>
-            </nav>
-
-            {/* Footer */}
-            <div className="uc-sb-footer">
-              <button className="uc-logout">
-                <IconLogout />
-                Logout
-              </button>
-            </div>
-
-          </aside>
-
-          {/* ── Main ── */}
-          <main className="uc-main">
-            <div className="uc-content">
-
-              {/* Page heading */}
-              <div style={{ marginBottom: '28px' }}>
-                <h1 style={{ fontFamily: 'Manrope, sans-serif', fontSize: '28px', fontWeight: 800, color: '#110755', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
-                  Welcome, Student
-                </h1>
-                <p style={{ fontSize: '14px', color: '#6B7280', marginTop: '6px', fontFamily: 'Inter, sans-serif' }}>
-                  Here's an overview of your facility bookings.
-                </p>
-              </div>
-
-              {/* Stat cards */}
-              <div style={{ display: 'flex', gap: '20px', marginBottom: '28px', flexWrap: 'wrap' }}>
-                <StatCard title="Total Bookings" count={loading ? '—' : stats.total}    icon="📋" accentColor="#F57923" />
-                <StatCard title="Approved"       count={loading ? '—' : stats.approved} icon="✅" accentColor="#10B981" />
-                <StatCard title="Pending"        count={loading ? '—' : stats.pending}  icon="⏳" accentColor="#F57923" />
-              </div>
-
-              {/* Bookings table card */}
-              <div style={{ background: '#fff', borderRadius: '16px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
-
-                {/* Card header */}
-                <div style={{ padding: '22px 24px 18px', borderBottom: '1px solid #F3F4F6' }}>
-                  <h2 style={{ fontFamily: 'Manrope, sans-serif', fontSize: '18px', fontWeight: 700, color: '#110755', margin: 0 }}>
-                    My Recent Bookings
-                  </h2>
-                </div>
-
-                {/* Table */}
-                <div style={{ overflowX: 'auto' }}>
+                <section className="glass-panel rounded-3xl border border-white/50 p-8 shadow-xl shadow-[#272269]/5">
+                  <div className="mb-8 flex items-center justify-between gap-4">
+                    <div>
+                      <h3 className="font-headline text-2xl font-black text-[#272269]">Recent Bookings</h3>
+                      <p className="mt-2 text-sm text-[#272269]/70">Review your latest bookings and cancel approved requests when needed.</p>
+                    </div>
+                  </div>
 
                   {loading && (
-                    <div style={{ padding: '56px 20px', textAlign: 'center', color: '#9CA3AF', fontSize: '14px' }}>
-                      Loading your bookings…
-                    </div>
+                    <div className="py-14 text-center text-sm text-[#272269]/50">Loading your bookings...</div>
                   )}
+
                   {!loading && error && (
-                    <div style={{ padding: '56px 20px', textAlign: 'center', color: '#991B1B', fontSize: '14px' }}>
-                      {error}
-                    </div>
+                    <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">{error}</div>
                   )}
+
                   {!loading && !error && bookings.length === 0 && (
-                    <div style={{ padding: '56px 20px', textAlign: 'center', color: '#9CA3AF', fontSize: '14px' }}>
-                      No bookings yet.
-                    </div>
+                    <div className="py-14 text-center text-sm text-[#272269]/50">No bookings yet.</div>
                   )}
 
                   {!loading && !error && bookings.length > 0 && (
-                    <table className="uc-table">
+                    <div className="overflow-x-auto rounded-2xl border border-white/60 bg-white/70">
+                      <table className="w-full border-collapse text-sm">
+                        <thead>
+                          <tr className="bg-white/80 text-left text-[11px] font-bold uppercase tracking-[0.08em] text-[#272269]/40">
+                            {['Resource ID', 'Start Time', 'End Time', 'Purpose', 'Status', 'Actions'].map((heading) => (
+                              <th key={heading} className="px-5 py-4">{heading}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bookings.map((booking) => (
+                            <tr key={booking.id} className="border-t border-[#272269]/5 transition-colors hover:bg-[#F9FAFB]">
+                              <td className="px-5 py-4 font-headline font-black text-[#272269]">#{booking.resourceId ?? booking.id}</td>
+                              <td className="px-5 py-4 whitespace-nowrap">{formatDateTime(booking.startDateTime)}</td>
+                              <td className="px-5 py-4 whitespace-nowrap">{formatDateTime(booking.endDateTime)}</td>
+                              <td className="max-w-[220px] px-5 py-4">
+                                <span className="block truncate">{booking.purpose}</span>
+                              </td>
+                              <td className="px-5 py-4"><StatusBadge status={booking.status} /></td>
+                              <td className="px-5 py-4">
+                                {booking.status === 'APPROVED' ? (
+                                  <button
+                                    onClick={() => openCancelModal(booking.id)}
+                                    className="rounded-full bg-gradient-to-r from-[#F17620] to-[#fe802a] px-4 py-2 text-xs font-bold text-white shadow-lg shadow-[#F17620]/25 transition-opacity hover:opacity-90"
+                                    type="button"
+                                  >
+                                    Cancel
+                                  </button>
+                                ) : (
+                                  <span className="text-sm text-[#272269]/25">—</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </section>
+              </>
+            ) : activeSection === 'user-information' ? (
+              <>
+                <section className="glass-panel relative overflow-hidden rounded-3xl border border-white/50 p-12 shadow-xl shadow-[#272269]/5">
+                  <div className="absolute right-[-50px] top-[-50px] h-96 w-96 rounded-full bg-[#F17620] aura-glow" />
+                  <div className="absolute bottom-[-100px] left-[10%] h-64 w-64 rounded-full bg-[#272269] aura-glow" />
+                  <div className="relative z-10 flex flex-col items-end justify-between gap-8 md:flex-row md:items-end">
+                    <div className="max-w-2xl">
+                      <span className="mb-4 inline-block rounded-full border border-[#F17620]/20 bg-[#F17620]/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#F17620]">
+                        Account Profile
+                      </span>
+                      <h2 className="mb-4 font-headline text-5xl font-extrabold leading-none tracking-tighter text-[#272269]">
+                        User <br />
+                        <span className="text-[#F17620]">Information</span>
+                      </h2>
+                      <p className="max-w-lg font-medium text-[#272269]/70">
+                        Review the account details tied to your UniCore session.
+                      </p>
+                    </div>
+
+                    <div className="flex gap-4">
+                      <div className="min-w-[140px] rounded-2xl border border-white bg-white/50 p-6 text-center shadow-sm">
+                        <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[#272269]/50">Role</p>
+                        <p className="font-headline text-3xl font-black text-[#F17620]">{formatValue(getRoleLabel(currentUser))}</p>
+                      </div>
+                      <div className="min-w-[140px] rounded-2xl border border-white bg-white/50 p-6 text-center shadow-sm">
+                        <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[#272269]/50">Account</p>
+                        <p className="font-headline text-3xl font-black text-[#272269]">Active</p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="glass-panel rounded-3xl border border-white/50 p-8 shadow-xl shadow-[#272269]/5">
+                  <div className="mb-8 flex items-center justify-between gap-4">
+                    <div>
+                      <h3 className="font-headline text-2xl font-black text-[#272269]">Account Details</h3>
+                      <p className="mt-2 text-sm text-[#272269]/70">Your profile information is shown below in the same dashboard style.</p>
+                    </div>
+
+                    <button
+                      className="rounded-full bg-gradient-to-r from-[#F17620] to-[#fe802a] px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#F17620]/25 transition-opacity hover:opacity-90"
+                      type="button"
+                      onClick={openEditModal}
+                    >
+                      Edit Information
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {[
+                      { label: 'First Name', value: currentUser?.firstName, icon: 'person' },
+                      { label: 'Last Name', value: currentUser?.lastName, icon: 'person' },
+                      { label: 'Email', value: currentUser?.email, icon: 'alternate_email' },
+                      { label: 'Role', value: getRoleLabel(currentUser), icon: 'badge' },
+                      { label: 'Username', value: currentUser?.username || currentUser?.name, icon: 'account_circle' },
+                      { label: 'User ID', value: currentUser?.id, icon: 'fingerprint' },
+                    ].map((item) => (
+                      <div key={item.label} className="rounded-2xl border border-white/60 bg-white/70 p-5 shadow-sm shadow-[#272269]/5">
+                        <div className="mb-4 flex items-start justify-between gap-4">
+                          <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#272269]/40">{item.label}</span>
+                          <span className="material-symbols-outlined text-[24px] leading-none text-[#272269]" aria-hidden="true" style={{ fontVariationSettings: "'FILL' 1" }}>
+                            {item.icon}
+                          </span>
+                        </div>
+                        <div className="break-words font-headline text-lg font-black text-[#272269]">{formatValue(item.value)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </>
+            ) : activeSection === 'bookings' ? (
+              <section className="glass-panel mt-6 rounded-3xl border border-white/50 p-8 shadow-xl shadow-[#272269]/5">
+                <div className="mb-6">
+                  <h3 className="font-headline text-2xl font-black text-[#272269]">My Bookings</h3>
+                  <p className="mt-2 text-sm text-[#272269]/70">Manage your approved and pending bookings from this list.</p>
+                </div>
+
+                {loading && <div className="py-14 text-center text-sm text-[#272269]/50">Loading your bookings...</div>}
+                {!loading && error && <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">{error}</div>}
+                {!loading && !error && bookings.length === 0 && <div className="py-14 text-center text-sm text-[#272269]/50">No bookings yet.</div>}
+
+                {!loading && !error && bookings.length > 0 && (
+                  <div className="overflow-x-auto rounded-2xl border border-white/60 bg-white/70">
+                    <table className="w-full border-collapse text-sm">
                       <thead>
-                        <tr>
-                          {['Resource ID', 'Start Time', 'End Time', 'Purpose', 'Status', 'Actions'].map((h) => (
-                            <th key={h} className="uc-th">{h}</th>
+                        <tr className="bg-white/80 text-left text-[11px] font-bold uppercase tracking-[0.08em] text-[#272269]/40">
+                          {['Resource ID', 'Start Time', 'End Time', 'Purpose', 'Status', 'Actions'].map((heading) => (
+                            <th key={heading} className="px-5 py-4">{heading}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
-                        {bookings.map((b) => (
-                          <tr key={b.id} className="uc-tr">
-                            <td className="uc-td" style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, color: '#110755' }}>
-                              #{b.resourceId ?? b.id}
+                        {bookings.map((booking) => (
+                          <tr key={booking.id} className="border-t border-[#272269]/5 transition-colors hover:bg-[#F9FAFB]">
+                            <td className="px-5 py-4 font-headline font-black text-[#272269]">#{booking.resourceId ?? booking.id}</td>
+                            <td className="px-5 py-4 whitespace-nowrap">{formatDateTime(booking.startDateTime)}</td>
+                            <td className="px-5 py-4 whitespace-nowrap">{formatDateTime(booking.endDateTime)}</td>
+                            <td className="max-w-[220px] px-5 py-4">
+                              <span className="block truncate">{booking.purpose}</span>
                             </td>
-                            <td className="uc-td" style={{ whiteSpace: 'nowrap' }}>{formatDateTime(b.startDateTime)}</td>
-                            <td className="uc-td" style={{ whiteSpace: 'nowrap' }}>{formatDateTime(b.endDateTime)}</td>
-                            <td className="uc-td" style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {b.purpose}
-                            </td>
-                            <td className="uc-td"><StatusBadge status={b.status} /></td>
-                            <td className="uc-td">
-                              {b.status === 'APPROVED' ? (
+                            <td className="px-5 py-4"><StatusBadge status={booking.status} /></td>
+                            <td className="px-5 py-4">
+                              {booking.status === 'APPROVED' ? (
                                 <button
-                                  onClick={() => openCancelModal(b.id)}
-                                  style={{
-                                    padding: '6px 16px', borderRadius: '999px',
-                                    background: 'linear-gradient(135deg, #F57923, #fe802a)',
-                                    color: '#fff', fontSize: '12px', fontWeight: 600,
-                                    border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                                    boxShadow: '0 2px 8px rgba(245,121,35,0.3)',
-                                    transition: 'opacity 0.15s',
-                                  }}
-                                  onMouseOver={(e) => (e.currentTarget.style.opacity = '0.85')}
-                                  onMouseOut={(e)  => (e.currentTarget.style.opacity = '1')}
+                                  onClick={() => openCancelModal(booking.id)}
+                                  className="rounded-full bg-gradient-to-r from-[#F17620] to-[#fe802a] px-4 py-2 text-xs font-bold text-white shadow-lg shadow-[#F17620]/25 transition-opacity hover:opacity-90"
+                                  type="button"
                                 >
                                   Cancel
                                 </button>
                               ) : (
-                                <span style={{ color: '#D1D5DB', fontSize: '14px' }}>—</span>
+                                <span className="text-sm text-[#272269]/25">—</span>
                               )}
                             </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
-                  )}
-                </div>
-              </div>
-
-            </div>
-          </main>
-
-        </div>
+                  </div>
+                )}
+              </section>
+            ) : (
+              <section className="glass-panel mt-6 rounded-3xl border border-white/50 p-8 shadow-xl shadow-[#272269]/5">
+                <h3 className="font-headline text-2xl font-black text-[#272269]">Support</h3>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-[#272269]/70">
+                  Need help with a booking request, approval status, or resource selection? Use the bookings tab to review your requests,
+                  or contact the campus operations team for assistance.
+                </p>
+              </section>
+            )}
+          </div>
+        </main>
       </div>
 
-      {/* ══ Cancel modal ════════════════════════════════════════════════════ */}
       {cancelModal.open && (
         <div
           onClick={closeCancelModal}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(17,7,85,0.3)', backdropFilter: 'blur(4px)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+          className="fixed inset-0 z-[300] flex items-center justify-center bg-[#272269]/30 px-5 backdrop-blur-sm"
         >
-          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: '20px', padding: '32px', width: '100%', maxWidth: '440px', boxShadow: '0 24px 48px rgba(17,7,85,0.15)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div
+            onClick={(event) => event.stopPropagation()}
+            className="flex w-full max-w-[440px] flex-col gap-4 rounded-[20px] bg-white p-8 shadow-[0_24px_48px_rgba(17,7,85,0.15)]"
+          >
             <div>
-              <h3 style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 700, fontSize: '18px', color: '#110755', margin: '0 0 6px' }}>Cancel Booking</h3>
-              <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>Optionally provide a reason for cancelling.</p>
+              <h3 className="mb-2 font-headline text-[18px] font-bold text-[#110755]">Cancel Booking</h3>
+              <p className="m-0 text-sm text-[#6B7280]">Optionally provide a reason for cancelling.</p>
             </div>
+
             <textarea
               placeholder="Reason for cancellation (optional, max 500 chars)"
               maxLength={500}
               value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
-              style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid #E5E7EB', background: '#FAFAFA', fontSize: '14px', fontFamily: 'Inter, sans-serif', color: '#374151', resize: 'vertical', minHeight: '90px', outline: 'none', boxSizing: 'border-box' }}
+              onChange={(event) => setCancelReason(event.target.value)}
+              className="min-h-[90px] w-full resize-y rounded-[10px] border border-[#E5E7EB] bg-[#FAFAFA] px-4 py-3 text-sm text-[#374151] outline-none"
             />
-            {cancelError && <p style={{ color: '#991B1B', fontSize: '13px', margin: 0 }}>{cancelError}</p>}
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+
+            {cancelError && <p className="m-0 text-[13px] text-[#991B1B]">{cancelError}</p>}
+
+            <div className="flex justify-end gap-3">
               <button
-                onClick={closeCancelModal} disabled={cancelling}
-                style={{ padding: '10px 20px', borderRadius: '10px', background: '#F3F4F6', color: '#374151', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '14px', border: 'none', cursor: 'pointer' }}
+                onClick={closeCancelModal}
+                disabled={cancelling}
+                type="button"
+                className="rounded-[10px] border-0 bg-[#F3F4F6] px-5 py-2.5 text-sm font-semibold text-[#374151]"
               >
                 Keep Booking
               </button>
               <button
-                onClick={confirmCancel} disabled={cancelling}
-                style={{ padding: '10px 22px', borderRadius: '10px', background: 'linear-gradient(135deg,#F57923,#fe802a)', color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '14px', border: 'none', cursor: 'pointer', opacity: cancelling ? 0.7 : 1, boxShadow: '0 4px 12px rgba(245,121,35,0.35)' }}
+                onClick={confirmCancel}
+                disabled={cancelling}
+                type="button"
+                className="rounded-[10px] border-0 bg-gradient-to-r from-[#F17620] to-[#fe802a] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#F17620]/25 disabled:opacity-70"
               >
-                {cancelling ? 'Cancelling…' : 'Confirm Cancel'}
+                {cancelling ? 'Cancelling...' : 'Confirm Cancel'}
               </button>
             </div>
           </div>
         </div>
       )}
-    </>
-  );
-};
 
-export default UserDashboard;
+      {editModalOpen && (
+        <div
+          onClick={closeEditModal}
+          className="fixed inset-0 z-[310] flex items-center justify-center bg-[#272269]/30 px-5 backdrop-blur-sm"
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            className="flex w-full max-w-2xl flex-col gap-5 rounded-[20px] bg-white p-8 shadow-[0_24px_48px_rgba(17,7,85,0.15)]"
+          >
+            <div>
+              <h3 className="mb-2 font-headline text-[18px] font-bold text-[#110755]">Edit Information</h3>
+              <p className="m-0 text-sm text-[#6B7280]">
+                {canEditProfile
+                  ? 'Update your account details. Leave password blank if you do not want to change it.'
+                  : 'Google-linked accounts cannot edit first name, last name, email, or password here.'}
+              </p>
+            </div>
+
+            {!canEditProfile ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+                This account is linked with Google. Please update your profile from Google if you need to change your name or email.
+              </div>
+            ) : (
+              <form className="grid grid-cols-1 gap-4 md:grid-cols-2" onSubmit={handleEditSubmit}>
+                <label className="flex flex-col gap-2 text-sm font-semibold text-[#272269]">
+                  First Name
+                  <input
+                    className="rounded-[10px] border border-[#E5E7EB] bg-[#FAFAFA] px-4 py-3 text-sm text-[#374151] outline-none focus:border-[#F17620]"
+                    type="text"
+                    value={editForm.firstName}
+                    onChange={(event) => setEditForm((currentValue) => ({ ...currentValue, firstName: event.target.value }))}
+                    required
+                    maxLength={50}
+                    disabled={editSaving}
+                  />
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm font-semibold text-[#272269]">
+                  Last Name
+                  <input
+                    className="rounded-[10px] border border-[#E5E7EB] bg-[#FAFAFA] px-4 py-3 text-sm text-[#374151] outline-none focus:border-[#F17620]"
+                    type="text"
+                    value={editForm.lastName}
+                    onChange={(event) => setEditForm((currentValue) => ({ ...currentValue, lastName: event.target.value }))}
+                    required
+                    maxLength={50}
+                    disabled={editSaving}
+                  />
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm font-semibold text-[#272269] md:col-span-2">
+                  Email
+                  <input
+                    className="rounded-[10px] border border-[#E5E7EB] bg-[#FAFAFA] px-4 py-3 text-sm text-[#374151] outline-none focus:border-[#F17620]"
+                    type="email"
+                    value={editForm.email}
+                    onChange={(event) => setEditForm((currentValue) => ({ ...currentValue, email: event.target.value }))}
+                    required
+                    maxLength={100}
+                    disabled={editSaving}
+                  />
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm font-semibold text-[#272269]">
+                  New Password
+                  <input
+                    className="rounded-[10px] border border-[#E5E7EB] bg-[#FAFAFA] px-4 py-3 text-sm text-[#374151] outline-none focus:border-[#F17620]"
+                    type="password"
+                    value={editForm.password}
+                    onChange={(event) => setEditForm((currentValue) => ({ ...currentValue, password: event.target.value }))}
+                    placeholder="Leave blank to keep current password"
+                    maxLength={72}
+                    disabled={editSaving}
+                  />
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm font-semibold text-[#272269]">
+                  Confirm Password
+                  <input
+                    className="rounded-[10px] border border-[#E5E7EB] bg-[#FAFAFA] px-4 py-3 text-sm text-[#374151] outline-none focus:border-[#F17620]"
+                    type="password"
+                    value={editForm.confirmPassword}
+                    onChange={(event) => setEditForm((currentValue) => ({ ...currentValue, confirmPassword: event.target.value }))}
+                    placeholder="Repeat new password"
+                    maxLength={72}
+                    disabled={editSaving}
+                  />
+                </label>
+
+                {editError && <p className="m-0 text-[13px] text-[#991B1B] md:col-span-2">{editError}</p>}
+
+                <div className="flex justify-end gap-3 md:col-span-2">
+                  <button
+                    onClick={closeEditModal}
+                    disabled={editSaving}
+                    type="button"
+                    className="rounded-[10px] border-0 bg-[#F3F4F6] px-5 py-2.5 text-sm font-semibold text-[#374151]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editSaving}
+                    className="rounded-[10px] border-0 bg-gradient-to-r from-[#F17620] to-[#fe802a] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#F17620]/25 disabled:opacity-70"
+                  >
+                    {editSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
