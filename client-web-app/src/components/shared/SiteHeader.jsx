@@ -1,7 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { clearAuthSession, getAuthSession } from '../../api/authApi';
 
-export default function SiteHeader({ className = '', onHome, onLogin, onSignup, onOpenDashboard, onLogout }) {
+export default function SiteHeader({
+  className = '',
+  onHome,
+  onLogin,
+  onSignup,
+  onOpenDashboard,
+  onOpenBookings,
+  onOpenTickets,
+  onOpenResources,
+  onLogout,
+}) {
   const authSession = getAuthSession();
   const currentUser = authSession?.user || null;
   const isLoggedIn = Boolean(authSession?.accessToken && currentUser);
@@ -61,6 +71,36 @@ export default function SiteHeader({ className = '', onHome, onLogin, onSignup, 
     </a>
   );
 
+  const BookingsControl = onOpenBookings ? (
+    <button className="nav-link nav-link--button" type="button" onClick={onOpenBookings}>
+      Bookings
+    </button>
+  ) : (
+    <a className="nav-link" href="#bookings">
+      Bookings
+    </a>
+  );
+
+  const TicketsControl = onOpenTickets ? (
+    <button className="nav-link nav-link--button" type="button" onClick={onOpenTickets}>
+      Tickets
+    </button>
+  ) : (
+    <a className="nav-link" href="#tickets">
+      Tickets
+    </a>
+  );
+
+  const ResourcesControl = onOpenResources ? (
+    <button className="nav-link nav-link--button" type="button" onClick={onOpenResources}>
+      Resources
+    </button>
+  ) : (
+    <a className="nav-link" href="#resources">
+      Resources
+    </a>
+  );
+
   return (
     <header className={[ 'landing-nav', className ].filter(Boolean).join(' ')}>
       <div className="brand">
@@ -69,15 +109,9 @@ export default function SiteHeader({ className = '', onHome, onLogin, onSignup, 
 
       <nav aria-label="Primary" className="nav-links">
         {HomeControl}
-        <a className="nav-link" href="#bookings">
-          Bookings
-        </a>
-        <a className="nav-link" href="#tickets">
-          Tickets
-        </a>
-        <a className="nav-link" href="#resources">
-          Resources
-        </a>
+        {BookingsControl}
+        {TicketsControl}
+        {ResourcesControl}
         <a className="nav-link" href="#faq">
           FAQ
         </a>

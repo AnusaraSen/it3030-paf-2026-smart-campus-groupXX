@@ -5,6 +5,7 @@ import App from './App';
 afterEach(() => {
   window.localStorage.clear();
   window.sessionStorage.clear();
+  window.history.pushState({}, '', '/');
 });
 
 test('renders landing page and navigates to auth views', async () => {

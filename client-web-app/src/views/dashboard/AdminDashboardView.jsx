@@ -9,7 +9,7 @@ import AdminDashboardFooter from '../../components/admin-dashboard/AdminDashboar
 import AdminDashboardHeader from '../../components/admin-dashboard/AdminDashboardHeader.jsx';
 import UserManagementPanel from '../../components/admin-dashboard/UserManagementPanel.jsx';
 
-export default function AdminDashboardView({ onHome, onLogout, onOpenDashboard }) {
+export default function AdminDashboardView({ onHome, onLogout, onOpenDashboard, onOpenBookings, onOpenResources }) {
   const authSession = getAuthSession();
   const currentUser = authSession?.user || null;
   const isAdmin = currentUser?.role === 'ADMIN';
@@ -52,7 +52,13 @@ export default function AdminDashboardView({ onHome, onLogout, onOpenDashboard }
       <AdminSidebar onHome={onHome} activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <main className="relative flex h-[calc(100vh-3rem)] min-w-0 flex-1 flex-col overflow-y-auto">
-        <AdminDashboardHeader onHome={onHome} onOpenDashboard={onOpenDashboard} onLogout={handleLogout} />
+        <AdminDashboardHeader
+          onHome={onHome}
+          onOpenDashboard={onOpenDashboard}
+          onOpenBookings={onOpenBookings}
+          onOpenResources={onOpenResources}
+          onLogout={handleLogout}
+        />
 
         {activeTab === 'bookings' ? (
           <AdminBookingPanel />

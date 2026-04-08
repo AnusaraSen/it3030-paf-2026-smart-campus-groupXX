@@ -4,9 +4,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 
-@SpringBootTest
+import com.smartcampus.backend.BackendApplication;
+
+@SpringBootTest(classes = BackendApplication.class)
 @TestPropertySource(properties = {
-    "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration",
     "spring.jpa.hibernate.ddl-auto=create-drop"
 })
 class ServerApiApplicationTests {

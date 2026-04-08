@@ -9,6 +9,16 @@
             "projectName": "server-api",
             "args": "",
             "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-BackendApplication<server-api>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.smartcampus.backend.BackendApplication",
+            "projectName": "server-api",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }
