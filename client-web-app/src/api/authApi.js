@@ -5,12 +5,14 @@ const AUTH_TOKEN_KEY = 'unicore.auth.token';
 const AUTH_USER_KEY = 'unicore.auth.user';
 
 async function requestJson(path, options = {}) {
+  const { headers: requestHeaders = {}, ...requestOptions } = options;
+  const hasRequestBody = typeof requestOptions.body !== 'undefined' && requestOptions.body !== null;
   const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...requestOptions,
     headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
+      ...(hasRequestBody ? { 'Content-Type': 'application/json' } : {}),
+      ...requestHeaders,
     },
-    ...options,
   });
 
   const text = await response.text();
@@ -18,7 +20,9 @@ async function requestJson(path, options = {}) {
 
   if (!response.ok) {
     const message = extractErrorMessage(payload, response.statusText || 'Request failed');
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
   }
 
   return payload;
@@ -77,6 +81,52 @@ export async function registerUser(payload) {
   return requestJson('/api/users/register', {
     method: 'POST',
     body: JSON.stringify(payload),
+  });
+}
+
+export async function fetchAllUsers(token = '') {
+  const resolvedToken = token || getAuthToken();
+
+  if (!resolvedToken) {
+    throw new Error('No access token available for the user list request.');
+  }
+
+  return requestJson('/api/users/all', {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${resolvedToken}`,
+    },
+  });
+}
+
+export async function updateUserById(id, payload, token = '') {
+  const resolvedToken = token || getAuthToken();
+
+  if (!resolvedToken) {
+    throw new Error('No access token available for the user update request.');
+  }
+
+  return requestJson(`/api/users/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+    headers: {
+      Authorization: `Bearer ${resolvedToken}`,
+    },
+  });
+}
+
+export async function deleteUserById(id, token = '') {
+  const resolvedToken = token || getAuthToken();
+
+  if (!resolvedToken) {
+    throw new Error('No access token available for the user delete request.');
+  }
+
+  return requestJson(`/api/users/${id}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${resolvedToken}`,
+    },
   });
 }
 
