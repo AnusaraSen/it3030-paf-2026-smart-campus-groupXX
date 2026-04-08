@@ -31,6 +31,15 @@ public class User {
     @Column(name = "email", nullable = false, unique = true, length = 100)
     private String email;
 
+    @Column(name = "name", length = 150)
+    private String name;
+
+    @Column(name = "provider", length = 20)
+    private String provider = "LOCAL";
+
+    @Column(name = "picture", length = 500)
+    private String picture;
+
     @Column(name = "password", nullable = false, length = 255)
     private String password;
 
@@ -90,6 +99,30 @@ public class User {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getProvider() {
+        return provider;
+    }
+
+    public void setProvider(String provider) {
+        this.provider = (provider == null || provider.isBlank()) ? "LOCAL" : provider;
+    }
+
+    public String getPicture() {
+        return picture;
+    }
+
+    public void setPicture(String picture) {
+        this.picture = picture;
     }
 
     public String getPassword() {

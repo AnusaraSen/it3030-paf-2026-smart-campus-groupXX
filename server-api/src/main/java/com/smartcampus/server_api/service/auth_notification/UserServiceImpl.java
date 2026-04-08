@@ -50,7 +50,9 @@ public class UserServiceImpl implements UserService {
         User user = new User();
         user.setFirstName(request.firstName());
         user.setLastName(request.lastName());
+        user.setName(buildDisplayName(request.firstName(), request.lastName()));
         user.setEmail(request.email().toLowerCase());
+        user.setProvider("LOCAL");
         user.setPassword(passwordEncoder.encode(request.password()));
 
         // For self-registration, default to USERS.
@@ -111,6 +113,7 @@ public class UserServiceImpl implements UserService {
         if (request.lastName() != null) {
             user.setLastName(request.lastName());
         }
+        user.setName(buildDisplayName(user.getFirstName(), user.getLastName()));
         if (request.email() != null) {
             String normalizedEmail = request.email().toLowerCase();
             if (!normalizedEmail.equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmail(normalizedEmail)) {
@@ -149,5 +152,16 @@ public class UserServiceImpl implements UserService {
                 user.getRole(),
                 user.getCreatedAt(),
                 user.getUpdatedAt());
+    }
+
+    private static String buildDisplayName(String firstName, String lastName) {
+        String normalizedFirstName = firstName == null ? "" : firstName.trim();
+        String normalizedLastName = lastName == null ? "" : lastName.trim();
+
+        if (normalizedFirstName.isEmpty() && normalizedLastName.isEmpty()) {
+            return null;
+        }
+
+        return (normalizedFirstName + " " + normalizedLastName).trim().replaceAll("\\s+", " ");
     }
 }

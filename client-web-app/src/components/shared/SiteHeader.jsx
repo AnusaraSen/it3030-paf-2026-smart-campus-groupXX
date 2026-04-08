@@ -1,6 +1,25 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { clearAuthSession, getAuthSession } from '../../api/authApi';
 
+function getFullName(currentUser) {
+  if (!currentUser) {
+    return '';
+  }
+
+  const firstName = typeof currentUser.firstName === 'string' ? currentUser.firstName.trim() : '';
+  const lastName = typeof currentUser.lastName === 'string' ? currentUser.lastName.trim() : '';
+
+  if (firstName || lastName) {
+    return [firstName, lastName].filter(Boolean).join(' ');
+  }
+
+  if (typeof currentUser.name === 'string' && currentUser.name.trim()) {
+    return currentUser.name.trim();
+  }
+
+  return typeof currentUser.email === 'string' ? currentUser.email.split('@')[0] : '';
+}
+
 export default function SiteHeader({ className = '', onHome, onLogin, onSignup, onOpenDashboard, onLogout }) {
   const authSession = getAuthSession();
   const currentUser = authSession?.user || null;
@@ -94,7 +113,7 @@ export default function SiteHeader({ className = '', onHome, onLogin, onSignup, 
               onClick={() => setIsUserMenuOpen((currentValue) => !currentValue)}
             >
               <span className="landing-user-chip__name">
-                {currentUser.firstName} {currentUser.lastName}
+                {getFullName(currentUser)}
               </span>
               <span className="landing-user-chip__role">{currentUser.role}</span>
             </button>
