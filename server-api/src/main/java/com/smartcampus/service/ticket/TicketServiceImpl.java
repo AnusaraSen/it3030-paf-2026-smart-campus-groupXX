@@ -56,6 +56,11 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    public TicketResponse getTicketById(Long id) {
+        return mapToResponse(findTicketById(id));
+    }
+
+    @Override
     public Page<TicketSummaryResponse> getMyTickets(Long userId,
                                                      Pageable pageable) {
         return ticketRepository.findByCreatedBy(userId, pageable)
