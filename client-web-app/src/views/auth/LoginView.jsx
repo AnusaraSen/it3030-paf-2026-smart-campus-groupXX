@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { loginUser, saveAuthSession } from '../../api/authApi';
+import { API_BASE_URL, loginUser, saveAuthSession } from '../../api/authApi';
 import { getCampusEmailError, getLoginPasswordError, normalizeEmail } from '../../utils/authValidation';
 
 export default function LoginView({ onAuthenticated, onBack, onSwitchToSignup }) {
@@ -199,6 +199,35 @@ export default function LoginView({ onAuthenticated, onBack, onSwitchToSignup })
             >
               <span>{isSubmitting ? 'Authenticating...' : 'Authenticate'}</span>
               <span className="material-symbols-outlined text-xl">arrow_forward</span>
+            </button>
+
+            <div className="flex items-center gap-3 px-1">
+              <span className="h-px flex-1 bg-primary/10" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-primary/30">or</span>
+              <span className="h-px flex-1 bg-primary/10" />
+            </div>
+
+            <button
+              type="button"
+              className={`w-full py-4 rounded-xl border border-primary/10 bg-white/80 text-primary font-semibold text-base shadow-sm hover:shadow-md hover:bg-white active:scale-95 transition-all duration-300 flex items-center justify-center gap-3 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+              onClick={() => {
+                const googleLoginUrl = `${API_BASE_URL}/oauth2/authorization/google`;
+
+                try {
+                  if (window.top && window.top !== window.self) {
+                    window.top.location.href = googleLoginUrl;
+                    return;
+                  }
+                } catch {
+                  // Fall back to the current browsing context when top navigation is blocked.
+                }
+
+                window.location.assign(googleLoginUrl);
+              }}
+              disabled={isSubmitting}
+            >
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-sm font-bold text-[#4285F4] shadow-inner ring-1 ring-[#4285F4]/10">G</span>
+              <span>Continue with Google</span>
             </button>
           </form>
 

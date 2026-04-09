@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
+export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || process.env.REACT_APP_API_BASE || 'http://localhost:8080';
 
 const AUTH_SESSION_KEY = 'unicore.auth.session';
 const AUTH_TOKEN_KEY = 'unicore.auth.token';
@@ -33,6 +33,31 @@ function safeParseJson(text) {
     return JSON.parse(text);
   } catch {
     return text;
+  }
+}
+
+function decodeBase64Url(value) {
+  const normalizedValue = value.replace(/-/g, '+').replace(/_/g, '/');
+  const paddedValue = normalizedValue.padEnd(Math.ceil(normalizedValue.length / 4) * 4, '=');
+  const binaryValue = window.atob(paddedValue);
+  const bytes = Uint8Array.from(binaryValue, (character) => character.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+export function decodeJwtPayload(token) {
+  if (!token || typeof token !== 'string') {
+    return null;
+  }
+
+  const parts = token.split('.');
+  if (parts.length < 2) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(decodeBase64Url(parts[1]));
+  } catch {
+    return null;
   }
 }
 
@@ -128,6 +153,40 @@ export async function deleteUserById(id, token = '') {
       Authorization: `Bearer ${resolvedToken}`,
     },
   });
+}
+
+export function updateStoredAuthUser(updatedUser) {
+  const storages = [window.localStorage, window.sessionStorage];
+  const storage = storages.find((candidateStorage) => candidateStorage.getItem(AUTH_SESSION_KEY));
+
+  if (!storage) {
+    return;
+  }
+
+  const storedSession = storage.getItem(AUTH_SESSION_KEY);
+  if (!storedSession) {
+    return;
+  }
+
+  let session;
+  try {
+    session = JSON.parse(storedSession);
+  } catch {
+    session = {};
+  }
+
+  const nextUser = {
+    ...(session.user || {}),
+    ...(updatedUser || {}),
+  };
+
+  const nextSession = {
+    ...session,
+    user: nextUser,
+  };
+
+  storage.setItem(AUTH_SESSION_KEY, JSON.stringify(nextSession));
+  storage.setItem(AUTH_USER_KEY, JSON.stringify(nextUser));
 }
 
 export function saveAuthSession(authResponse, remember = false) {
