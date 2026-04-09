@@ -2,7 +2,7 @@ spring:
   application:
     name: server-api
   profiles:
-    default: mysql
+    default: ${SPRING_PROFILES_DEFAULT:mysql}
   security:
     oauth2:
       client:
@@ -54,9 +54,9 @@ spring:
     activate:
       on-profile: mysql
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3036/smart_campus_db}
+    url: ${DB_URL:jdbc:mysql://localhost:3306/smart_campus_db?createDatabaseIfNotExist=true}
     username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:root}
+    password: ${DB_PASSWORD:123456}
   jpa:
     hibernate:
       ddl-auto: update
