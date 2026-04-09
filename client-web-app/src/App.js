@@ -1,7 +1,6 @@
-import './App.css';
-import './styles/uniCore.css';
 import { useEffect, useState } from 'react';
 import { clearAuthSession } from './api/authApi';
+import './styles/uniCore.css';
 import LandingView from './views/landing/LandingView.jsx';
 import LoginView from './views/auth/LoginView.jsx';
 import OAuthSuccessView from './views/auth/OAuthSuccessView.jsx';
@@ -132,5 +131,4 @@ function App() {
     </div>
   );
 }
-
 export default App;

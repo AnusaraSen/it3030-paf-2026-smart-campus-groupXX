@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -42,20 +43,19 @@ public class SecurityConfig {
             OAuth2SuccessHandler oAuth2SuccessHandler) throws Exception {
         http
             .cors(Customizer.withDefaults())
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-                .authenticationProvider(authenticationProvider())
-                .exceptionHandling(exception -> exception.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/oauth2/**", "/login/oauth2/code/google", "/auth/**").permitAll()
-                        .requestMatchers("/api/users/register", "/api/users/login").permitAll()
+            .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+            .authenticationProvider(authenticationProvider())
+            .exceptionHandling(exception -> exception.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+            .authorizeHttpRequests(auth -> auth
+                    .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                    .requestMatchers("/oauth2/**", "/login/oauth2/code/google", "/auth/**").permitAll()
+                    .requestMatchers("/api/users/register", "/api/users/login").permitAll()
                     .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/resources/**").permitAll()
-                        .requestMatchers("/api/user/**").hasAnyRole("USER", "USERS", "ADMIN", "TECHNICIAN")
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/technician/**").hasRole("TECHNICIAN")
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/resources/**").permitAll()
-                        .anyRequest().authenticated())
+                    .requestMatchers("/api/user/**").hasAnyRole("USER", "USERS", "ADMIN", "TECHNICIAN")
+                    .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                    .requestMatchers("/api/technician/**").hasRole("TECHNICIAN")
+                    .anyRequest().authenticated())
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                     .successHandler(oAuth2SuccessHandler)
@@ -117,7 +117,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration config)
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
             throws Exception {
         return config.getAuthenticationManager();
     }

@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -65,15 +66,27 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public AuthResponseDTO login(LoginRequestDTO request) {
+        String normalizedEmail = request.email().toLowerCase();
+        User user = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new InvalidCredentialsException());
+
+        boolean passwordMatches = false;
         try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.email(), request.password()));
-        } catch (BadCredentialsException ex) {
-            throw new InvalidCredentialsException();
+            passwordMatches = passwordEncoder.matches(request.password(), user.getPassword());
+        } catch (RuntimeException ignored) {
+            passwordMatches = false;
         }
 
-        User user = userRepository.findByEmail(request.email().toLowerCase())
-                .orElseThrow(() -> new InvalidCredentialsException());
+        if (!passwordMatches && user.getPassword() != null
+                && (user.getPassword().startsWith("$2a$")
+                        || user.getPassword().startsWith("$2b$")
+                        || user.getPassword().startsWith("$2y$"))) {
+            passwordMatches = new BCryptPasswordEncoder().matches(request.password(), user.getPassword());
+        }
+
+        if (!passwordMatches) {
+            throw new InvalidCredentialsException();
+        }
 
         String token = jwtService.generateToken(user);
         return new AuthResponseDTO("Bearer", token, jwtService.getExpirationSeconds(), toResponse(user));
