@@ -3,23 +3,37 @@ package com.smartcampus.service.ticket;
 import com.smartcampus.dto.ticket.*;
 import com.smartcampus.exception.*;
 import com.smartcampus.model.*;
+import com.smartcampus.model.auth_notification.User;
+import com.smartcampus.model.auth_notification.Role;
+import com.smartcampus.model.facilities.Resource;
+import com.smartcampus.repository.auth_notification.UserRepository;
+import com.smartcampus.repository.facilities.ResourceRepository;
 import com.smartcampus.repository.ticket.*;
+import com.smartcampus.service.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class TicketServiceImpl implements TicketService {
 
+    private static final Logger log = LoggerFactory.getLogger(TicketServiceImpl.class);
+
     private final TicketRepository ticketRepository;
     private final TicketAttachmentRepository attachmentRepository;
     private final TicketCommentRepository commentRepository;
     private final FileStorageService fileStorageService;
+    private final ResourceRepository resourceRepository;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -61,10 +75,36 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    @Transactional
+    public TicketResponse updateTicket(Long ticketId, CreateTicketRequest request, Long userId) {
+        Ticket ticket = findTicketById(ticketId);
+        if (!Objects.equals(ticket.getCreatedBy(), userId)) {
+            throw new ForbiddenOperationException("You can only edit your own tickets.");
+        }
+
+        if (ticket.getStatus() != TicketStatus.OPEN) {
+            throw new ForbiddenOperationException("Only OPEN tickets can be edited.");
+        }
+
+        ticket.setResourceId(request.getResourceId());
+        ticket.setCategory(request.getCategory());
+        ticket.setDescription(request.getDescription());
+        ticket.setPriority(request.getPriority());
+        ticket.setPreferredContact(request.getPreferredContact());
+
+        return mapToResponse(ticketRepository.save(ticket));
+    }
+
+    @Override
     public Page<TicketSummaryResponse> getMyTickets(Long userId,
                                                      Pageable pageable) {
-        return ticketRepository.findByCreatedBy(userId, pageable)
-            .map(this::mapToSummary);
+        try {
+            return ticketRepository.findByCreatedBy(userId, pageable)
+                .map(this::mapToSummary);
+        } catch (Exception ex) {
+            log.error("Failed to load my tickets for userId={}", userId, ex);
+            throw ex;
+        }
     }
 
     @Override
@@ -72,9 +112,15 @@ public class TicketServiceImpl implements TicketService {
                                                       TicketPriority priority,
                                                       Long technicianId,
                                                       Pageable pageable) {
-        return ticketRepository
-            .findAllWithFilters(status, priority, technicianId, pageable)
-            .map(this::mapToSummary);
+        try {
+            return ticketRepository
+                .findAllWithFilters(status, priority, technicianId, pageable)
+                .map(this::mapToSummary);
+        } catch (Exception ex) {
+            log.error("Failed to load staff tickets status={}, priority={}, technicianId={}",
+                status, priority, technicianId, ex);
+            throw ex;
+        }
     }
 
     @Override
@@ -92,6 +138,7 @@ public class TicketServiceImpl implements TicketService {
                                         UpdateTicketStatusRequest request,
                                         Long userId, String userRole) {
         Ticket ticket = findTicketById(ticketId);
+        TicketStatus previousStatus = ticket.getStatus();
         validateStatusTransition(ticket.getStatus(),
             request.getStatus(), userRole);
         if (request.getStatus() == TicketStatus.REJECTED) {
@@ -104,8 +151,7 @@ public class TicketServiceImpl implements TicketService {
         }
         ticket.setStatus(request.getStatus());
         Ticket saved = ticketRepository.save(ticket);
-        // notificationService.create(ticket.getCreatedBy(),
-        //     "Your ticket is now " + request.getStatus(), "TICKET");
+        notifyTicketStatusChange(saved, previousStatus, request.getStatus(), userId);
         return mapToResponse(saved);
     }
 
@@ -114,6 +160,7 @@ public class TicketServiceImpl implements TicketService {
     public TicketResponse resolveTicket(Long ticketId,
                                          ResolveTicketRequest request) {
         Ticket ticket = findTicketById(ticketId);
+        TicketStatus previousStatus = ticket.getStatus();
         if (ticket.getStatus() != TicketStatus.IN_PROGRESS) {
             throw new InvalidStatusTransitionException(
                 "Ticket must be IN_PROGRESS before resolving.");
@@ -121,8 +168,7 @@ public class TicketServiceImpl implements TicketService {
         ticket.setStatus(TicketStatus.RESOLVED);
         ticket.setResolutionNotes(request.getResolutionNotes());
         Ticket saved = ticketRepository.save(ticket);
-        // notificationService.create(ticket.getCreatedBy(),
-        //     "Your ticket has been RESOLVED", "TICKET");
+        notifyTicketStatusChange(saved, previousStatus, TicketStatus.RESOLVED, null);
         return mapToResponse(saved);
     }
 
@@ -164,9 +210,10 @@ public class TicketServiceImpl implements TicketService {
     public CommentResponse editComment(Long commentId,
                                         AddCommentRequest request,
                                         Long userId) {
-        TicketComment comment = commentRepository.findById(commentId)
+        Long resolvedCommentId = Objects.requireNonNull(commentId, "Comment ID is required");
+        TicketComment comment = commentRepository.findById(resolvedCommentId)
             .orElseThrow(() -> new ResourceNotFoundException(
-                "Comment not found with ID: " + commentId));
+                "Comment not found with ID: " + resolvedCommentId));
         if (!comment.getUserId().equals(userId)) {
             throw new CommentOwnershipException(
                 "You can only edit your own comments.");
@@ -178,9 +225,10 @@ public class TicketServiceImpl implements TicketService {
     @Override
     @Transactional
     public void deleteComment(Long commentId, Long userId, String userRole) {
-        TicketComment comment = commentRepository.findById(commentId)
+        Long resolvedCommentId = Objects.requireNonNull(commentId, "Comment ID is required");
+        TicketComment comment = commentRepository.findById(resolvedCommentId)
             .orElseThrow(() -> new ResourceNotFoundException(
-                "Comment not found with ID: " + commentId));
+                "Comment not found with ID: " + resolvedCommentId));
         boolean isOwner = comment.getUserId().equals(userId);
         boolean isAdmin = "ROLE_ADMIN".equals(userRole);
         if (!isOwner && !isAdmin) {
@@ -224,21 +272,25 @@ public class TicketServiceImpl implements TicketService {
     }
 
     private Ticket findTicketById(Long id) {
-        return ticketRepository.findById(id)
+        Long resolvedTicketId = Objects.requireNonNull(id, "Ticket ID is required");
+        return ticketRepository.findById(resolvedTicketId)
             .orElseThrow(() -> new ResourceNotFoundException(
-                "Ticket not found with ID: " + id));
+                "Ticket not found with ID: " + resolvedTicketId));
     }
 
     private TicketResponse mapToResponse(Ticket ticket) {
         TicketResponse res = new TicketResponse();
         res.setId(ticket.getId());
         res.setResourceId(ticket.getResourceId());
+        res.setResourceName(resolveResourceName(ticket.getResourceId()));
         res.setCreatedBy(ticket.getCreatedBy());
+        res.setCreatedByName(resolveUserDisplayName(ticket.getCreatedBy()));
         res.setCategory(ticket.getCategory());
         res.setDescription(ticket.getDescription());
         res.setPriority(ticket.getPriority());
         res.setStatus(ticket.getStatus());
         res.setAssignedTechnicianId(ticket.getAssignedTechnicianId());
+        res.setAssignedTechnicianName(resolveUserDisplayName(ticket.getAssignedTechnicianId()));
         res.setResolutionNotes(ticket.getResolutionNotes());
         res.setPreferredContact(ticket.getPreferredContact());
         res.setRejectionReason(ticket.getRejectionReason());
@@ -265,9 +317,15 @@ public class TicketServiceImpl implements TicketService {
     private TicketSummaryResponse mapToSummary(Ticket ticket) {
         TicketSummaryResponse res = new TicketSummaryResponse();
         res.setId(ticket.getId());
+        res.setResourceId(ticket.getResourceId());
+        res.setResourceName(resolveResourceName(ticket.getResourceId()));
+        res.setCreatedBy(ticket.getCreatedBy());
+        res.setCreatedByName(resolveUserDisplayName(ticket.getCreatedBy()));
         res.setCategory(ticket.getCategory());
         res.setPriority(ticket.getPriority());
         res.setStatus(ticket.getStatus());
+        res.setAssignedTechnicianId(ticket.getAssignedTechnicianId());
+        res.setAssignedTechnicianName(resolveUserDisplayName(ticket.getAssignedTechnicianId()));
         res.setCreatedAt(ticket.getCreatedAt());
         return res;
     }
@@ -280,5 +338,96 @@ public class TicketServiceImpl implements TicketService {
         res.setCreatedAt(comment.getCreatedAt());
         res.setUpdatedAt(comment.getUpdatedAt());
         return res;
+    }
+
+    private String resolveResourceName(Long resourceId) {
+        if (resourceId == null) {
+            return null;
+        }
+
+        return resourceRepository.findById(resourceId)
+            .map(Resource::getName)
+            .orElse(null);
+    }
+
+    private String resolveUserDisplayName(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+
+        return userRepository.findById(userId)
+            .map(TicketServiceImpl::formatUserDisplayName)
+            .orElse(null);
+    }
+
+    private static String formatUserDisplayName(User user) {
+        if (user == null) {
+            return null;
+        }
+
+        String explicitName = user.getName();
+        if (explicitName != null && !explicitName.isBlank()) {
+            return explicitName.trim();
+        }
+
+        String firstName = user.getFirstName() == null ? "" : user.getFirstName().trim();
+        String lastName = user.getLastName() == null ? "" : user.getLastName().trim();
+        String fullName = (firstName + " " + lastName).trim().replaceAll("\\s+", " ");
+
+        if (!fullName.isBlank()) {
+            return fullName;
+        }
+
+        return user.getEmail();
+    }
+
+    private void notifyTicketStatusChange(Ticket ticket,
+                                          TicketStatus previousStatus,
+                                          TicketStatus nextStatus,
+                                          Long changedByUserId) {
+        if (ticket == null || nextStatus == null) {
+            return;
+        }
+
+        List<Long> recipientIds = new java.util.ArrayList<>();
+        recipientIds.add(ticket.getCreatedBy());
+        recipientIds.addAll(userRepository.findAllByRole(Role.ADMIN).stream()
+            .map(User::getId)
+            .toList());
+
+        String resourceName = resolveResourceName(ticket.getResourceId());
+        String changedByName = resolveUserDisplayName(changedByUserId);
+        String title = "Ticket status updated";
+        String message = buildTicketStatusMessage(
+            ticket.getId(), resourceName, previousStatus, nextStatus, changedByName);
+
+        notificationService.notifyUsers(recipientIds, title, message, "TICKET_STATUS");
+    }
+
+    private static String buildTicketStatusMessage(Long ticketId,
+                                                   String resourceName,
+                                                   TicketStatus previousStatus,
+                                                   TicketStatus nextStatus,
+                                                   String changedByName) {
+        StringBuilder message = new StringBuilder();
+        message.append("Ticket #").append(ticketId);
+
+        if (resourceName != null && !resourceName.isBlank()) {
+            message.append(" for ").append(resourceName);
+        }
+
+        if (previousStatus != null) {
+            message.append(" changed from ").append(previousStatus);
+        } else {
+            message.append(" changed");
+        }
+
+        message.append(" to ").append(nextStatus).append('.');
+
+        if (changedByName != null && !changedByName.isBlank()) {
+            message.append(" Updated by ").append(changedByName).append('.');
+        }
+
+        return message.toString();
     }
 }

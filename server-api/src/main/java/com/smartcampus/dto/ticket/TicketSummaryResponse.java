@@ -9,7 +9,12 @@ import java.time.LocalDateTime;
 @Data
 public class TicketSummaryResponse {
     private Long id;
+    private Long resourceId;
     private String resourceName;
+    private Long assignedTechnicianId;
+    private String assignedTechnicianName;
+    private Long createdBy;
+    private String createdByName;
     private TicketCategory category;
     private TicketPriority priority;
     private TicketStatus status;

@@ -1,12 +1,23 @@
 package com.smartcampus.model;
 
-import jakarta.persistence.*;
-import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import lombok.Data;
+
 @Entity
-@Table(name = "tickets", indexes = {
+@Table(name = "ticket", indexes = {
     @Index(name = "idx_ticket_status", columnList = "status"),
     @Index(name = "idx_ticket_priority", columnList = "priority"),
     @Index(name = "idx_ticket_created_by", columnList = "created_by"),

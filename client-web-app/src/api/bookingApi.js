@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getAuthToken } from './authApi';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL: (process.env.REACT_APP_API_BASE_URL || process.env.REACT_APP_API_BASE || 'http://localhost:8080') + '/api',
   headers: { 'Content-Type': 'application/json' },
 });
 

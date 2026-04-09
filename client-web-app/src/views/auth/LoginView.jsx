@@ -211,7 +211,18 @@ export default function LoginView({ onAuthenticated, onBack, onSwitchToSignup })
               type="button"
               className={`w-full py-4 rounded-xl border border-primary/10 bg-white/80 text-primary font-semibold text-base shadow-sm hover:shadow-md hover:bg-white active:scale-95 transition-all duration-300 flex items-center justify-center gap-3 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
               onClick={() => {
-                window.location.assign(`${API_BASE_URL}/oauth2/authorization/google`);
+                const googleLoginUrl = `${API_BASE_URL}/oauth2/authorization/google`;
+
+                try {
+                  if (window.top && window.top !== window.self) {
+                    window.top.location.href = googleLoginUrl;
+                    return;
+                  }
+                } catch {
+                  // Fall back to the current browsing context when top navigation is blocked.
+                }
+
+                window.location.assign(googleLoginUrl);
               }}
               disabled={isSubmitting}
             >

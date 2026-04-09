@@ -15,6 +15,8 @@ public interface TicketService {
 
     TicketResponse getTicketById(Long id);
 
+        TicketResponse updateTicket(Long ticketId, CreateTicketRequest request, Long userId);
+
     Page<TicketSummaryResponse> getMyTickets(Long userId, Pageable pageable);
 
     Page<TicketSummaryResponse> getAllTickets(

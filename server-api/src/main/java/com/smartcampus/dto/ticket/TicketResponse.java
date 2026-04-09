@@ -13,11 +13,13 @@ public class TicketResponse {
     private Long resourceId;
     private String resourceName;
     private Long createdBy;
+    private String createdByName;
     private TicketCategory category;
     private String description;
     private TicketPriority priority;
     private TicketStatus status;
     private Long assignedTechnicianId;
+    private String assignedTechnicianName;
     private String resolutionNotes;
     private String preferredContact;
     private String rejectionReason;

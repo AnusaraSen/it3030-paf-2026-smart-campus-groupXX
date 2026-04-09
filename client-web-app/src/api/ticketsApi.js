@@ -59,6 +59,18 @@ export async function getTicket(id, authHeader) {
   return res.json();
 }
 
+export async function updateTicket(id, payload, authHeader) {
+  const res = await apiFetch(
+    `/api/tickets/${id}`,
+    { method: 'PUT', body: JSON.stringify(payload) },
+    authHeader
+  );
+  if (!res.ok) {
+    throw new Error(await readErrorMessage(res));
+  }
+  return res.json();
+}
+
 export async function deleteTicket(id, authHeader) {
   const res = await apiFetch(`/api/tickets/${id}`, { method: 'DELETE' }, authHeader);
   if (!res.ok) {

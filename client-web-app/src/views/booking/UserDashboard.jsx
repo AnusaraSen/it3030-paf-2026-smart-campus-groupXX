@@ -4,6 +4,7 @@ import StatusBadge from '../../components/booking/StatusBadge';
 import { clearAuthSession, getAuthSession, updateStoredAuthUser, updateUserById } from '../../api/authApi';
 import SiteHeader from '../../components/shared/SiteHeader.jsx';
 import UserSidebar from '../../components/user-dashboard/UserSidebar.jsx';
+import { MyTicketsPage } from '../../pages/MyTicketsPage.js';
 
 const formatDateTime = (iso) => {
   if (!iso) {
@@ -82,7 +83,7 @@ const StatCard = ({ title, count, icon, accentColor }) => (
   </div>
 );
 
-export default function UserDashboard({ onHome, onLogout }) {
+export default function UserDashboard({ onHome, onLogout, onOpenTickets }) {
   const authSession = getAuthSession();
   const [profileUser, setProfileUser] = useState(() => authSession?.user || null);
   const currentUser = profileUser;
@@ -120,6 +121,10 @@ export default function UserDashboard({ onHome, onLogout }) {
 
   const handleOpenUserInformation = useCallback(() => {
     setActiveSection('user-information');
+  }, []);
+
+  const handleOpenTicketsSection = useCallback(() => {
+    setActiveSection('tickets');
   }, []);
 
   const openEditModal = useCallback(() => {
@@ -255,12 +260,13 @@ export default function UserDashboard({ onHome, onLogout }) {
         className="landing-nav--dashboard"
         onHome={onHome}
         onOpenBookings={handleOpenDashboard}
+        onOpenTickets={onOpenTickets}
         onLogout={handleLogout}
       />
 
       <div className="flex gap-2 px-5 pb-6 pt-8">
         <UserSidebar
-          className={activeSection === 'bookings' ? 'mt-20' : ''}
+          className={activeSection === 'tickets' ? 'mt-16' : activeSection === 'bookings' ? 'mt-20' : ''}
           collapsed={isSidebarCollapsed}
           activeSection={activeSection}
           onHome={onHome}
@@ -272,6 +278,11 @@ export default function UserDashboard({ onHome, onLogout }) {
 
             if (section === 'user-information') {
               handleOpenUserInformation();
+              return;
+            }
+
+            if (section === 'tickets') {
+              handleOpenTicketsSection();
               return;
             }
 
@@ -501,6 +512,19 @@ export default function UserDashboard({ onHome, onLogout }) {
                     </table>
                   </div>
                 )}
+              </section>
+            ) : activeSection === 'tickets' ? (
+              <section className="glass-panel mt-6 rounded-3xl border border-white/50 p-8 shadow-xl shadow-[#272269]/5">
+                <div className="mb-6 flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="font-headline text-2xl font-black text-[#272269]">My Tickets</h3>
+                    <p className="mt-2 text-sm text-[#272269]/70">
+                      View the tickets you submitted and check their current status.
+                    </p>
+                  </div>
+                </div>
+
+                <MyTicketsPage />
               </section>
             ) : (
               <section className="glass-panel mt-6 rounded-3xl border border-white/50 p-8 shadow-xl shadow-[#272269]/5">

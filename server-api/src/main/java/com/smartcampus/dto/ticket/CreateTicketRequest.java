@@ -21,7 +21,6 @@ public class CreateTicketRequest {
     @NotNull(message = "Priority is required")
     private TicketPriority priority;
 
-    @NotBlank(message = "Preferred contact is required")
     @Size(max = 255, message = "Preferred contact must not exceed 255 characters")
     private String preferredContact;
 }

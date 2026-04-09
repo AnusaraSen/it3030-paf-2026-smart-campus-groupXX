@@ -39,6 +39,9 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
 
+file:
+  upload-dir: uploads/
+
 app:
   jwt:
     secret: ${APP_JWT_SECRET:u7G0q0T4yBv2cZkF9K2Cq5m2oC9Qz3n1B6yq3zPpZ0M=}
