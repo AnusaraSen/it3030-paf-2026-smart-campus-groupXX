@@ -1,5 +1,18 @@
 package com.smartcampus.backend.service.booking;
 
+import java.time.DayOfWeek;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.smartcampus.backend.dto.BookingRequestDTO;
 import com.smartcampus.backend.dto.BookingResponseDTO;
 import com.smartcampus.backend.exception.ResourceConflictException;
@@ -11,18 +24,6 @@ import com.smartcampus.server_api.model.facilities.Resource;
 import com.smartcampus.server_api.model.facilities.ResourceAvailabilityWindow;
 import com.smartcampus.server_api.model.facilities.ResourceStatus;
 import com.smartcampus.server_api.repository.facilities.ResourceRepository;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.DayOfWeek;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 // Business logic
 
