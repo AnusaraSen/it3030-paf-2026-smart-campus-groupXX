@@ -576,6 +576,7 @@ a {
   backdrop-filter: blur(22px);
   border: 0;
   box-shadow: 0 16px 34px rgba(21, 27, 42, 0.06);
+  z-index: 1000;
 }
 
 .nav-text-button {
@@ -629,6 +630,7 @@ a {
   padding: 0 2rem 3rem;
   width: min(100%, 80rem);
   margin: 0 auto;
+  z-index: 1;
 }
 
 .landing-glow {

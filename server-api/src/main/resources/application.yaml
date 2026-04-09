@@ -1,6 +1,22 @@
 spring:
   application:
     name: server-api
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/smart_campus_db}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:anusara}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    defer-datasource-initialization: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
   profiles:
     default: mysql
   security:
@@ -8,8 +24,8 @@ spring:
       client:
         registration:
           google:
-            client-id: ${GOOGLE_CLIENT_ID:your-google-client-id}
-            client-secret: ${GOOGLE_CLIENT_SECRET:your-google-client-secret}
+            client-id: ${GOOGLE_CLIENT_ID:321821547881-tmg0rk0c715ag4v5ed3pqirnabhg02it.apps.googleusercontent.com}
+            client-secret: ${GOOGLE_CLIENT_SECRET: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}
             scope:
               - openid
               - profile
@@ -22,6 +38,7 @@ spring:
             token-uri: https://oauth2.googleapis.com/token
             user-info-uri: https://openidconnect.googleapis.com/v1/userinfo
             user-name-attribute: sub
+
 server:
   port: ${SERVER_PORT:8080}
 
