@@ -51,10 +51,19 @@ public class Booking {
     @Column(name = "cancel_reason", length = 500)
     private String cancelReason;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+        @Column(
+            name = "created_at",
+            nullable = false,
+            updatable = false,
+            columnDefinition = "DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)"
+        )
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
+        @Column(
+            name = "updated_at",
+            nullable = false,
+            columnDefinition = "DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)"
+        )
     private LocalDateTime updatedAt;
 
     @PrePersist

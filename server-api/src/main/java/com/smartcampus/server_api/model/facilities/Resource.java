@@ -56,11 +56,20 @@ public class Resource {
     private List<ResourceAvailabilityWindow> availabilityWindows = new ArrayList<>();
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+        @Column(
+            name = "created_at",
+            nullable = false,
+            updatable = false,
+            columnDefinition = "DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)"
+        )
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
+        @Column(
+            name = "updated_at",
+            nullable = false,
+            columnDefinition = "DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)"
+        )
     private LocalDateTime updatedAt;
 
     public Resource() {

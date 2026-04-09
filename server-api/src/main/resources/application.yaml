@@ -15,7 +15,7 @@ spring:
       mode: always
       schema-locations: classpath:schema.sql
   profiles:
-    default: mysql
+    default: ${SPRING_PROFILES_DEFAULT:mysql}
   security:
     oauth2:
       client:
