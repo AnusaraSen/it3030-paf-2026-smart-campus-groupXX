@@ -31,6 +31,27 @@ function formatWindows(windows) {
     .join(', ');
 }
 
+function getStatusTone(status) {
+  if (status === 'ACTIVE') {
+    return 'bg-emerald-100 text-emerald-700';
+  }
+
+  return 'bg-rose-100 text-rose-700';
+}
+
+function formatAvailabilityCards(windows) {
+  if (!Array.isArray(windows) || windows.length === 0) {
+    return ['No availability set'];
+  }
+
+  return windows.map((window) => {
+    const day = String(window.dayOfWeek || '').slice(0, 3);
+    const start = window.startTime || '';
+    const end = window.endTime || '';
+    return `${day} ${start}-${end}`.trim();
+  });
+}
+
 export default function FacilitiesCatalogueView({
   onHome,
   onLogout,
@@ -38,6 +59,7 @@ export default function FacilitiesCatalogueView({
   onOpenBookings,
   onOpenTickets,
   onOpenResources,
+  onOpenBookingForm,
 }) {
   const [filters, setFilters] = useState({
     q: '',
@@ -51,6 +73,25 @@ export default function FacilitiesCatalogueView({
   const [status, setStatus] = useState('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [resources, setResources] = useState([]);
+
+  const loadResources = async (nextFilters = requestFilters) => {
+    setErrorMessage('');
+    setStatus('loading');
+
+    try {
+      const data = await searchResources(nextFilters);
+      setResources(Array.isArray(data) ? data : []);
+      setStatus('success');
+    } catch (error) {
+      setResources([]);
+      setStatus('error');
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to load resources.');
+    }
+  };
+
+  const loadAllResources = async () => {
+    await loadResources({});
+  };
 
   const requestFilters = useMemo(() => {
     const minCapacity = filters.minCapacity === '' ? undefined : Number(filters.minCapacity);
@@ -73,21 +114,10 @@ export default function FacilitiesCatalogueView({
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setErrorMessage('');
-    setStatus('loading');
-
-    try {
-      const data = await searchResources(requestFilters);
-      setResources(Array.isArray(data) ? data : []);
-      setStatus('success');
-    } catch (error) {
-      setResources([]);
-      setStatus('error');
-      setErrorMessage(error instanceof Error ? error.message : 'Unable to load resources.');
-    }
+    await loadResources(requestFilters);
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     setFilters({
       q: '',
       type: '',
@@ -96,16 +126,19 @@ export default function FacilitiesCatalogueView({
       maxCapacity: '',
       location: '',
     });
-    setResources([]);
-    setStatus('idle');
     setErrorMessage('');
+    await loadAllResources();
   };
+
+  React.useEffect(() => {
+    loadAllResources();
+  }, []);
 
   const isLoading = status === 'loading';
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_0%_0%,#E0E7FF_0%,#faf9f9_100%)] px-5 pb-10 pt-8 text-[#272269]">
-      <main className="mx-auto w-full max-w-6xl">
+      <main className="mx-auto w-full max-w-6xl pt-10 md:pt-14">
         <SiteHeader
           className="landing-nav--dashboard"
           onHome={onHome}
@@ -248,46 +281,91 @@ export default function FacilitiesCatalogueView({
             <div className="text-sm font-semibold text-[#272269]/60">{resources.length} resource(s)</div>
           </div>
 
-          <div className="mt-4 overflow-x-auto rounded-2xl border border-white/60 bg-white/40">
-            <table className="min-w-full text-left text-sm">
-              <thead className="bg-white/60">
-                <tr>
-                  <th className="px-4 py-3 font-bold uppercase tracking-widest text-[11px] text-[#272269]/60">Name</th>
-                  <th className="px-4 py-3 font-bold uppercase tracking-widest text-[11px] text-[#272269]/60">Type</th>
-                  <th className="px-4 py-3 font-bold uppercase tracking-widest text-[11px] text-[#272269]/60">Capacity</th>
-                  <th className="px-4 py-3 font-bold uppercase tracking-widest text-[11px] text-[#272269]/60">Location</th>
-                  <th className="px-4 py-3 font-bold uppercase tracking-widest text-[11px] text-[#272269]/60">Status</th>
-                  <th className="px-4 py-3 font-bold uppercase tracking-widest text-[11px] text-[#272269]/60">Availability</th>
-                </tr>
-              </thead>
-              <tbody>
-                {resources.length === 0 ? (
-                  <tr>
-                    <td className="px-4 py-6 text-sm font-semibold text-[#272269]/60" colSpan={6}>
-                      {status === 'idle'
-                        ? 'Run a search to load resources.'
-                        : status === 'loading'
-                          ? 'Loading...'
-                          : 'No matching resources found.'}
-                    </td>
-                  </tr>
-                ) : (
-                  resources.map((resource) => (
-                    <tr key={resource.id} className="border-t border-white/60">
-                      <td className="px-4 py-3 font-bold text-[#272269]">{resource.name}</td>
-                      <td className="px-4 py-3 font-semibold text-[#272269]/70">{resource.type}</td>
-                      <td className="px-4 py-3 font-semibold text-[#272269]/70">{resource.capacity}</td>
-                      <td className="px-4 py-3 font-semibold text-[#272269]/70">{resource.location}</td>
-                      <td className="px-4 py-3 font-semibold text-[#272269]/70">{resource.status}</td>
-                      <td className="px-4 py-3 font-semibold text-[#272269]/70">
-                        {formatWindows(resource.availabilityWindows)}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+          {status === 'loading' ? (
+            <div className="mt-4 rounded-2xl border border-white/60 bg-white/40 px-5 py-6 text-sm font-semibold text-[#272269]/60">
+              Loading resources...
+            </div>
+          ) : resources.length === 0 ? (
+            <div className="mt-4 rounded-2xl border border-white/60 bg-white/40 px-5 py-6 text-sm font-semibold text-[#272269]/60">
+              {status === 'idle' ? 'No resources available yet.' : 'No matching resources found.'}
+            </div>
+          ) : (
+            <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {resources.map((resource) => {
+                const availabilityCards = formatAvailabilityCards(resource.availabilityWindows);
+                const isBookable = resource.status === 'ACTIVE' && Array.isArray(resource.availabilityWindows) && resource.availabilityWindows.length > 0;
+
+                return (
+                  <article
+                    key={resource.id}
+                    className="rounded-3xl border border-white/60 bg-white/70 p-5 shadow-[0_18px_45px_rgba(39,34,105,0.08)] backdrop-blur-xl transition-transform duration-200 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(39,34,105,0.12)]"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className="font-headline text-xl font-black text-[#272269]">{resource.name}</h3>
+                        <p className="mt-1 text-sm font-medium uppercase tracking-[0.2em] text-[#272269]/45">
+                          {resource.type}
+                        </p>
+                      </div>
+                      <span className={['rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest', getStatusTone(resource.status)].join(' ')}>
+                        {resource.status}
+                      </span>
+                    </div>
+
+                    {resource.status !== 'ACTIVE' ? (
+                      <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-700">
+                        This resource is out of service and cannot be booked.
+                      </div>
+                    ) : null}
+
+                    <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
+                      <div className="rounded-2xl border border-white/70 bg-white/70 px-4 py-3">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#272269]/40">Capacity</p>
+                        <p className="mt-1 font-bold text-[#272269]">{resource.capacity}</p>
+                      </div>
+                      <div className="rounded-2xl border border-white/70 bg-white/70 px-4 py-3">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#272269]/40">Location</p>
+                        <p className="mt-1 font-bold text-[#272269]">{resource.location}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 rounded-2xl border border-[#272269]/10 bg-[#272269]/5 px-4 py-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#272269]/40">Availability</p>
+                        <span className="text-xs font-semibold text-[#272269]/55">{availabilityCards.length} slot{availabilityCards.length === 1 ? '' : 's'}</span>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {availabilityCards.map((entry) => (
+                          <span
+                            key={entry}
+                            className="rounded-full border border-[#F17620]/15 bg-[#F17620]/10 px-3 py-1 text-[11px] font-bold tracking-widest text-[#F17620]"
+                          >
+                            {entry}
+                          </span>
+                        ))}
+                      </div>
+
+                      {resource.availabilityWindows?.length ? (
+                        <p className="mt-3 text-xs text-[#272269]/55">{formatWindows(resource.availabilityWindows)}</p>
+                      ) : null}
+
+                      <div className="mt-4 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => onOpenBookingForm?.(resource)}
+                          disabled={!isBookable}
+                          className="rounded-full bg-[#F57923] px-4 py-2 text-xs font-bold uppercase tracking-widest text-white shadow-[0_10px_24px_rgba(245,121,35,0.28)] transition-transform hover:-translate-y-0.5 hover:bg-[#e66c14] disabled:cursor-not-allowed disabled:bg-[#F57923]/40 disabled:shadow-none"
+                        >
+                          {isBookable ? 'Book Resource' : 'Unavailable'}
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
         </section>
       </main>
     </div>

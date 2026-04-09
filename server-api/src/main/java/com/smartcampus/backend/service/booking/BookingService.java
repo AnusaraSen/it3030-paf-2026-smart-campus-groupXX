@@ -1,12 +1,13 @@
 package com.smartcampus.backend.service.booking;
 
-import com.smartcampus.backend.dto.BookingRequestDTO;
-import com.smartcampus.backend.dto.BookingResponseDTO;
-import com.smartcampus.backend.model.BookingStatus;
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import java.util.List;
+import com.smartcampus.backend.dto.BookingRequestDTO;
+import com.smartcampus.backend.dto.BookingResponseDTO;
+import com.smartcampus.backend.model.BookingStatus;
 
 public interface BookingService {
 

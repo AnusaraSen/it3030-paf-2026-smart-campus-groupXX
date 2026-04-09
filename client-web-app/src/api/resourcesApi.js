@@ -23,7 +23,9 @@ async function requestJson(path, options = {}) {
 
   if (!response.ok) {
     const message = extractErrorMessage(payload, response.statusText || 'Request failed');
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
   }
 
   return payload;

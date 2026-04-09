@@ -3,6 +3,7 @@ import React from 'react';
 const navigationItems = [
   { icon: 'dashboard', label: 'Dashboard', key: 'dashboard' },
   { icon: 'calendar_month', label: 'Bookings', key: 'bookings' },
+  { icon: 'inventory_2', label: 'Resources', key: 'resources' },
   { icon: 'group', label: 'User Management', key: 'user-management' },
 ];
 

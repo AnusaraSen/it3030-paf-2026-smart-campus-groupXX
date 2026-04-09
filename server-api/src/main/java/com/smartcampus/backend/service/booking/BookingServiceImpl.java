@@ -7,47 +7,69 @@ import com.smartcampus.backend.exception.ResourceNotFoundException;
 import com.smartcampus.backend.model.Booking;
 import com.smartcampus.backend.model.BookingStatus;
 import com.smartcampus.backend.repository.BookingRepository;
-import lombok.RequiredArgsConstructor;
+import com.smartcampus.server_api.model.facilities.Resource;
+import com.smartcampus.server_api.model.facilities.ResourceAvailabilityWindow;
+import com.smartcampus.server_api.model.facilities.ResourceStatus;
+import com.smartcampus.server_api.repository.facilities.ResourceRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 // Business logic
 
 @Service
-@RequiredArgsConstructor
 public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
+    private final ResourceRepository resourceRepository;
+
+    public BookingServiceImpl(BookingRepository bookingRepository, ResourceRepository resourceRepository) {
+        this.bookingRepository = bookingRepository;
+        this.resourceRepository = resourceRepository;
+    }
 
     @Override
     @Transactional
+    @SuppressWarnings("null")
     public BookingResponseDTO createBooking(BookingRequestDTO dto, Long userId) {
+        Long resourceId = Objects.requireNonNull(dto.getResourceId(), "Resource ID is required");
+
+        Resource resource = resourceRepository.findById(resourceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Resource not found with id: " + resourceId));
+
         if (!dto.getEndDateTime().isAfter(dto.getStartDateTime())) {
             throw new IllegalArgumentException("End time must be after start time");
         }
+
         if (Duration.between(dto.getStartDateTime(), dto.getEndDateTime()).toMinutes() < 30) {
             throw new IllegalArgumentException("Minimum booking duration is 30 minutes");
         }
 
+        ensureResourceIsBookable(resource, dto.getStartDateTime(), dto.getEndDateTime());
+
         List<Booking> conflicts = bookingRepository.findConflictingBookings(
-                dto.getResourceId(),
+            resourceId,
                 dto.getStartDateTime(),
                 dto.getEndDateTime()
         );
+
         if (!conflicts.isEmpty()) {
             throw new ResourceConflictException(
-                    "Resource " + dto.getResourceId() + " is already booked during the requested time slot"
+                "Resource " + resourceId + " is already booked during the requested time slot"
             );
         }
 
         Booking booking = Booking.builder()
-                .resourceId(dto.getResourceId())
+            .resourceId(resourceId)
                 .userId(userId)
                 .startDateTime(dto.getStartDateTime())
                 .endDateTime(dto.getEndDateTime())
@@ -57,13 +79,14 @@ public class BookingServiceImpl implements BookingService {
                 .cancelReason(null)
                 .build();
 
-        return toResponse(bookingRepository.save(booking));
+        Booking savedBooking = bookingRepository.save(booking);
+        return toResponse(savedBooking);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<BookingResponseDTO> getMyBookings(Long userId) {
-        return bookingRepository.findByUserIdOrderByStartDateTimeDesc(userId).stream()
+        return bookingRepository.findByUserIdOrderByStartDateTimeDesc(Objects.requireNonNull(userId, "User ID is required")).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -71,27 +94,30 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional(readOnly = true)
     public Page<BookingResponseDTO> getAllBookings(BookingStatus status, Pageable pageable) {
+        Pageable pageRequest = Objects.requireNonNull(pageable, "Pageable is required");
+
         if (status != null) {
-            return bookingRepository.findByStatus(status, pageable).map(this::toResponse);
+            return bookingRepository.findByStatus(status, pageRequest).map(this::toResponse);
         }
-        return bookingRepository.findAll(pageable).map(this::toResponse);
+
+        return bookingRepository.findAll(pageRequest).map(this::toResponse);
     }
 
     @Override
     @Transactional
     public BookingResponseDTO approveBooking(Long bookingId) {
-        Booking booking = findById(bookingId);
+        Booking booking = findById(Objects.requireNonNull(bookingId, "Booking ID is required"));
         if (booking.getStatus() != BookingStatus.PENDING) {
             throw new ResourceConflictException("Only PENDING bookings can be approved");
         }
         booking.setStatus(BookingStatus.APPROVED);
-        return toResponse(bookingRepository.save(booking));
+        return toResponse(Objects.requireNonNull(bookingRepository.save(booking)));
     }
 
     @Override
     @Transactional
     public BookingResponseDTO rejectBooking(Long bookingId, String reason) {
-        Booking booking = findById(bookingId);
+        Booking booking = findById(Objects.requireNonNull(bookingId, "Booking ID is required"));
         if (booking.getStatus() != BookingStatus.PENDING) {
             throw new ResourceConflictException("Only PENDING bookings can be rejected");
         }
@@ -100,36 +126,65 @@ public class BookingServiceImpl implements BookingService {
         }
         booking.setStatus(BookingStatus.REJECTED);
         booking.setRejectionReason(reason);
-        return toResponse(bookingRepository.save(booking));
+        return toResponse(Objects.requireNonNull(bookingRepository.save(booking)));
     }
 
     @Override
     @Transactional
     public BookingResponseDTO cancelBooking(Long bookingId, Long userId, String cancelReason) {
-        Booking booking = findById(bookingId);
+        Booking booking = findById(Objects.requireNonNull(bookingId, "Booking ID is required"));
         if (booking.getStatus() != BookingStatus.APPROVED) {
             throw new ResourceConflictException("Only APPROVED bookings can be cancelled");
         }
         booking.setStatus(BookingStatus.CANCELLED);
         booking.setCancelReason(cancelReason);
-        return toResponse(bookingRepository.save(booking));
+        return toResponse(Objects.requireNonNull(bookingRepository.save(booking)));
     }
 
     @Override
     @Transactional
     public void deleteBooking(Long id) {
-        Booking booking = findById(id);
+        Long bookingId = Objects.requireNonNull(id, "Booking ID is required");
+        Booking booking = findById(bookingId);
         if (booking.getStatus() != BookingStatus.REJECTED && booking.getStatus() != BookingStatus.CANCELLED) {
             throw new ResourceConflictException("Only REJECTED or CANCELLED bookings can be deleted");
         }
-        bookingRepository.deleteById(id);
+        bookingRepository.deleteById(bookingId);
     }
 
     private Booking findById(Long bookingId) {
-        return bookingRepository.findById(bookingId)
+        return bookingRepository.findById(Objects.requireNonNull(bookingId, "Booking ID is required"))
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Booking not found with id: " + bookingId
                 ));
+    }
+
+    private void ensureResourceIsBookable(Resource resource, LocalDateTime startDateTime, LocalDateTime endDateTime) {
+        if (resource.getStatus() != ResourceStatus.ACTIVE) {
+            throw new ResourceConflictException("Resource is not available for booking");
+        }
+
+        List<ResourceAvailabilityWindow> availabilityWindows = resource.getAvailabilityWindows();
+        if (availabilityWindows == null || availabilityWindows.isEmpty()) {
+            throw new ResourceConflictException("Resource has no availability windows configured");
+        }
+
+        if (!startDateTime.toLocalDate().equals(endDateTime.toLocalDate())) {
+            throw new ResourceConflictException("Booking must be within a single availability day");
+        }
+
+        DayOfWeek bookingDay = startDateTime.getDayOfWeek();
+        LocalTime bookingStart = startDateTime.toLocalTime();
+        LocalTime bookingEnd = endDateTime.toLocalTime();
+
+        boolean withinWindow = availabilityWindows.stream().anyMatch(window ->
+                window.getDayOfWeek() == bookingDay
+                        && !bookingStart.isBefore(window.getStartTime())
+                        && !bookingEnd.isAfter(window.getEndTime()));
+
+        if (!withinWindow) {
+            throw new ResourceConflictException("Requested time is outside the resource availability windows");
+        }
     }
 
     private BookingResponseDTO toResponse(Booking booking) {

@@ -36,7 +36,7 @@ function viewFromPath(pathname) {
 function App() {
   const [activeView, setActiveView] = useState(() => viewFromPath(window.location.pathname));
   const [showBookingForm, setShowBookingForm] = useState(false);
-  const [selectedResourceId, setSelectedResourceId] = useState(null);
+  const [selectedResource, setSelectedResource] = useState(null);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -59,14 +59,14 @@ function App() {
   const showBookings = () => go('/bookings', 'bookings');
   const showResources = () => go('/resources', 'resources');
 
-  const openBookingForm = (resourceId) => {
-    setSelectedResourceId(resourceId);
+  const openBookingForm = (resource) => {
+    setSelectedResource(resource);
     setShowBookingForm(true);
   };
 
   const closeBookingForm = () => {
     setShowBookingForm(false);
-    setSelectedResourceId(null);
+    setSelectedResource(null);
   };
 
   const handleAuthenticated = (authResponse) => {
@@ -109,6 +109,7 @@ function App() {
           onOpenDashboard={showDashboard}
           onOpenBookings={showBookings}
           onOpenResources={showResources}
+          onOpenBookingForm={openBookingForm}
         />
       ) : (
         <LandingView
@@ -123,39 +124,11 @@ function App() {
 
       {showBookingForm && (
         <BookingFormPage
-          resourceId={selectedResourceId}
+          resource={selectedResource}
           onClose={closeBookingForm}
           onSuccess={closeBookingForm}
         />
       )}
-
-      <button
-        onClick={() => openBookingForm(1)}
-        style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          zIndex: 500,
-          background: '#F57923',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '999px',
-          padding: '12px 20px',
-          fontSize: '13px',
-          fontWeight: 700,
-          fontFamily: 'Inter, sans-serif',
-          boxShadow: '0 4px 16px rgba(245,121,35,0.4)',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-        }}
-      >
-        <span className="material-symbols-outlined" style={{ fontSize: '18px', fontVariationSettings: "'FILL' 1" }}>
-          calendar_add_on
-        </span>
-        Test Booking Form
-      </button>
     </div>
   );
 }

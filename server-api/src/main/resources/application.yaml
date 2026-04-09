@@ -10,9 +10,6 @@ spring:
       ddl-auto: update
     show-sql: false
     defer-datasource-initialization: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
   sql:
     init:
       mode: always
@@ -71,9 +68,9 @@ spring:
     activate:
       on-profile: mysql
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3036/smart_campus_db}
+    url: ${DB_URL:jdbc:mysql://localhost:3306/smart_campus_db}
     username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:root}
+    password: ${DB_PASSWORD:anusara}
   jpa:
     hibernate:
       ddl-auto: update

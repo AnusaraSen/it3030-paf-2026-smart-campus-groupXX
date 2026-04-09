@@ -7,6 +7,7 @@ import ChartsPanel from '../../components/admin-dashboard/ChartsPanel.jsx';
 import ActivityAndAlertsPanel from '../../components/admin-dashboard/ActivityAndAlertsPanel.jsx';
 import AdminDashboardFooter from '../../components/admin-dashboard/AdminDashboardFooter.jsx';
 import AdminDashboardHeader from '../../components/admin-dashboard/AdminDashboardHeader.jsx';
+import ResourceManagementPanel from '../../components/admin-dashboard/ResourceManagementPanel.jsx';
 import UserManagementPanel from '../../components/admin-dashboard/UserManagementPanel.jsx';
 
 function buildUserGrowthSeries(users, months = 6) {
@@ -227,6 +228,8 @@ export default function AdminDashboardView({ onHome, onLogout, onOpenDashboard, 
             </>
           ) : activeSection === 'bookings' ? (
             <AdminBookingPanel />
+          ) : activeSection === 'resources' ? (
+            <ResourceManagementPanel onSessionExpired={handleLogout} />
           ) : (
             <UserManagementPanel onSessionExpired={handleLogout} />
           )}

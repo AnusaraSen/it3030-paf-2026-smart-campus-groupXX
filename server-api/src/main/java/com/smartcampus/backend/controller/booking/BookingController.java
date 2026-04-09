@@ -5,7 +5,6 @@ import com.smartcampus.backend.dto.BookingResponseDTO;
 import com.smartcampus.backend.model.BookingStatus;
 import com.smartcampus.backend.service.booking.BookingService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -21,13 +20,16 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/bookings")
-@RequiredArgsConstructor
 public class BookingController {
 
     // TODO: replace with authenticated user id once auth is integrated
     private static final Long PLACEHOLDER_USER_ID = 1L;
 
     private final BookingService bookingService;
+
+    public BookingController(BookingService bookingService) {
+        this.bookingService = bookingService;
+    }
 
     @PostMapping
     public ResponseEntity<BookingResponseDTO> createBooking(@Valid @RequestBody BookingRequestDTO dto) {
