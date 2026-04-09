@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@RestControllerAdvice
+@RestControllerAdvice(basePackages = "com.smartcampus.backend")
 @Component("backendGlobalExceptionHandler")
 public class GlobalExceptionHandler {
 

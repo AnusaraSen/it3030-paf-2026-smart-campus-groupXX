@@ -1,24 +1,8 @@
 spring:
   application:
     name: server-api
-  datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/smart_campus_db}
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:anusara}
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: false
-    defer-datasource-initialization: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
-  sql:
-    init:
-      mode: always
-      schema-locations: classpath:schema.sql
   profiles:
-    default: h2
+    default: mysql
   security:
     oauth2:
       client:
@@ -48,7 +32,7 @@ spring:
     activate:
       on-profile: h2
   datasource:
-    url: jdbc:h2:mem:smart_campus_db;MODE=MySQL;DB_CLOSE_DELAY=-1
+    url: jdbc:h2:file:./data/smart_campus_db;MODE=MySQL;AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
     username: sa
     password:
@@ -56,6 +40,9 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
   sql:
     init:
       mode: never
@@ -66,7 +53,7 @@ spring:
     activate:
       on-profile: mysql
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/smart_campus_db}
+    url: ${DB_URL:jdbc:mysql://localhost:3036/smart_campus_db}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:root}
   jpa:
