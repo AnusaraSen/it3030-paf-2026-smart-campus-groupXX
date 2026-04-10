@@ -54,6 +54,15 @@ public class TicketServiceImpl implements TicketService {
         ticket.setStatus(TicketStatus.OPEN);
         Ticket saved = ticketRepository.save(ticket);
 
+        try {
+            notificationService.notifyAdmins(
+                "New Ticket Created",
+                buildTicketCreatedMessage(saved, userId),
+                "TICKET_CREATED");
+        } catch (RuntimeException ex) {
+            log.warn("Failed to create ticket notification for ticketId={}", saved.getId(), ex);
+        }
+
         if (files != null) {
             for (MultipartFile file : files) {
                 if (!file.isEmpty()) {
@@ -428,6 +437,32 @@ public class TicketServiceImpl implements TicketService {
             message.append(" Updated by ").append(changedByName).append('.');
         }
 
+        return message.toString();
+    }
+
+    private String buildTicketCreatedMessage(Ticket ticket, Long createdByUserId) {
+        StringBuilder message = new StringBuilder();
+        message.append("Ticket #").append(ticket.getId()).append(" was created");
+
+        String resourceName = resolveResourceName(ticket.getResourceId());
+        if (resourceName != null && !resourceName.isBlank()) {
+            message.append(" for ").append(resourceName);
+        }
+
+        String createdByName = resolveUserDisplayName(createdByUserId);
+        if (createdByName != null && !createdByName.isBlank()) {
+            message.append(" by ").append(createdByName);
+        }
+
+        if (ticket.getCategory() != null) {
+            message.append(" (Category: ").append(ticket.getCategory()).append(")");
+        }
+
+        if (ticket.getPriority() != null) {
+            message.append(" (Priority: ").append(ticket.getPriority()).append(")");
+        }
+
+        message.append('.');
         return message.toString();
     }
 }

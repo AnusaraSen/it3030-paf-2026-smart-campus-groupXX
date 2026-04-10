@@ -15,6 +15,7 @@ import java.lang.reflect.Constructor;
 
 import org.junit.jupiter.api.Test;
 
+import com.smartcampus.dto.ticket.CreateTicketRequest;
 import com.smartcampus.dto.ticket.ResolveTicketRequest;
 import com.smartcampus.dto.ticket.TicketResponse;
 import com.smartcampus.dto.ticket.UpdateTicketStatusRequest;
@@ -33,6 +34,55 @@ import com.smartcampus.repository.ticket.TicketRepository;
 import com.smartcampus.service.notification.NotificationService;
 
 class TicketServiceImplTest {
+
+    @Test
+    void createTicket_notifiesAdminsWhenTicketIsCreated() {
+        Ticket ticket = buildTicket(TicketStatus.OPEN);
+        ticket.setId(99L);
+
+        TicketRepository ticketRepository = mock(TicketRepository.class, invocation -> {
+            if ("save".equals(invocation.getMethod().getName())) {
+                return ticket;
+            }
+            return invocation.callRealMethod();
+        });
+        TicketAttachmentRepository attachmentRepository = mock(TicketAttachmentRepository.class);
+        TicketCommentRepository commentRepository = mock(TicketCommentRepository.class);
+        FileStorageService fileStorageService = mock(FileStorageService.class);
+        ResourceRepository resourceRepository = mock(ResourceRepository.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        NotificationService notificationService = mock(NotificationService.class);
+
+        when(attachmentRepository.findByTicketId(99L)).thenReturn(List.of());
+        when(commentRepository.findByTicketIdOrderByCreatedAtAsc(99L)).thenReturn(List.of());
+        when(resourceRepository.findById(1L)).thenReturn(Optional.of(buildResource("Lecture Hall A")));
+        when(userRepository.findById(7L)).thenReturn(Optional.of(buildUser(7L, "Pimashi", "Wickramarachchi", "pimashi.w@campus.com", Role.USERS)));
+        when(userRepository.findAllByRole(Role.ADMIN)).thenReturn(List.of(buildUser(11L, "Admin", "One", "admin1@campus.com", Role.ADMIN)));
+
+        TicketServiceImpl service = createService(
+            ticketRepository,
+            attachmentRepository,
+            commentRepository,
+            fileStorageService,
+            resourceRepository,
+            userRepository,
+            notificationService);
+
+        CreateTicketRequest request = new CreateTicketRequest();
+        request.setResourceId(1L);
+        request.setCategory(TicketCategory.ELECTRICAL);
+        request.setDescription("Projector is not working");
+        request.setPriority(TicketPriority.HIGH);
+        request.setPreferredContact("student@campus.com");
+
+        TicketResponse response = service.createTicket(request, List.of(), 7L);
+
+        assertThat(response.getId()).isEqualTo(99L);
+        verify(notificationService).notifyAdmins(
+            "New Ticket Created",
+            "Ticket #99 was created for Lecture Hall A by Pimashi Wickramarachchi (Category: ELECTRICAL) (Priority: HIGH).",
+            "TICKET_CREATED");
+    }
 
     @Test
     void updateStatus_persistsStatusAndNotifiesRecipients() {

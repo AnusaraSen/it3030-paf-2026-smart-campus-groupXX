@@ -35,6 +35,9 @@ export default function SiteHeader({
   onLogout,
   isHomePage = false,
   isAboutPage = false,
+  notificationTypePrefix = '',
+  notificationTypePrefixes = [],
+  notificationHeading = 'Notifications',
 }) {
   const authSession = getAuthSession();
   const currentUser = authSession?.user || null;
@@ -47,7 +50,14 @@ export default function SiteHeader({
   const userMenuRef = useRef(null);
   const notificationsRef = useRef(null);
 
-  const unreadNotifications = notifications.filter((notification) => !notification.isRead);
+  const notificationPrefixes = [notificationTypePrefix, ...notificationTypePrefixes]
+    .map((prefix) => String(prefix || '').trim())
+    .filter(Boolean);
+
+  const visibleNotifications = notificationPrefixes.length > 0
+    ? notifications.filter((notification) => notificationPrefixes.some((prefix) => String(notification?.type || '').startsWith(prefix)))
+    : notifications;
+  const unreadNotifications = visibleNotifications.filter((notification) => !notification.isRead);
 
   const loadNotifications = async () => {
     if (!isLoggedIn) {
@@ -221,7 +231,7 @@ export default function SiteHeader({
               <button
                 aria-expanded={isNotificationsOpen}
                 aria-haspopup="menu"
-                aria-label={`Notifications${unreadNotifications.length ? ` (${unreadNotifications.length} unread)` : ''}`}
+                aria-label={`${notificationHeading}${unreadNotifications.length ? ` (${unreadNotifications.length} unread)` : ''}`}
                 className="landing-user-chip landing-user-chip--button landing-notification-bell relative"
                 type="button"
                 onClick={() => {
@@ -246,7 +256,7 @@ export default function SiteHeader({
                   <div className="border-b border-[#272269]/10 px-4 py-3">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-sm font-semibold text-[#272269]">Notifications</p>
+                        <p className="text-sm font-semibold text-[#272269]">{notificationHeading}</p>
                         <p className="mt-1 text-xs text-[#272269]/60">
                           {notificationsLoading
                             ? 'Loading notifications...'
@@ -258,7 +268,7 @@ export default function SiteHeader({
                         type="button"
                         className="rounded-full border border-[#272269]/10 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#272269]/60 transition hover:border-[#F17620]/30 hover:text-[#F17620] disabled:cursor-not-allowed disabled:opacity-50"
                         onClick={handleClearAllNotifications}
-                        disabled={notificationsLoading || notifications.length === 0}
+                        disabled={notificationsLoading || visibleNotifications.length === 0}
                       >
                         Clear All
                       </button>
