@@ -261,6 +261,8 @@ export default function AdminDashboardView({ onHome, onLogout, onOpenDashboard, 
           onOpenTickets={onOpenTickets}
           onOpenResources={onOpenResources}
           onLogout={handleLogout}
+          notificationTypePrefixes={['TICKET_', 'BOOKING_']}
+          notificationHeading="Admin Notifications"
         />
 
         <div className="space-y-10 px-4 pb-10 pt-16">
