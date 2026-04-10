@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { jsPDF } from 'jspdf';
 import { deleteUserById, fetchAllUsers, getAuthSession, registerUser, updateUserById } from '../../api/authApi';
 import {
   getCampusEmailError,
@@ -55,6 +56,12 @@ const DEFAULT_ADD_FORM = {
   confirmPassword: '',
 };
 
+const DEFAULT_REPORT_FORM = {
+  dateFrom: '',
+  dateTo: '',
+  role: 'ALL',
+};
+
 function validateEditForm(form) {
   return {
     firstName: form.firstName.trim() ? '' : 'First name is required.',
@@ -74,6 +81,283 @@ function validateAddForm(form) {
   };
 }
 
+function getDateKey(value) {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatReportDate(value) {
+  if (!value) {
+    return 'All dates';
+  }
+
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return 'All dates';
+  }
+
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
+}
+
+function formatReportTableDate(value) {
+  if (!value) {
+    return 'Unknown';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return 'Unknown';
+  }
+
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
+}
+
+function formatReportGeneratedAt(value) {
+  if (!value) {
+    return 'Unknown';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return 'Unknown';
+  }
+
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
+
+function buildRoleSummary(users) {
+  const roles = ['ADMIN', 'TECHNICIAN', 'USERS'];
+
+  return roles.map((role) => ({
+    role,
+    count: users.filter((user) => user.role === role).length,
+  }));
+}
+
+function createUserReportPdf({ generatedAt, filters, users }) {
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 40;
+  const contentWidth = pageWidth - (margin * 2);
+  const titleColor = [39, 34, 105];
+  const accentColor = [241, 118, 32];
+  const borderColor = [227, 231, 244];
+  const textColor = [31, 35, 53];
+  const summaryCardWidth = (contentWidth - 24) / 3;
+  const summaryCardHeight = 66;
+  const filterCardWidth = (contentWidth - 24) / 3;
+  const filterCardHeight = 54;
+  const tableColumns = [
+    { header: 'Name', width: 150 },
+    { header: 'Email', width: 195 },
+    { header: 'Role', width: 70 },
+    { header: 'Joined', width: contentWidth - 150 - 195 - 70 },
+  ];
+  const lineHeight = 12;
+  let cursorY = margin;
+
+  const drawTextBlock = (lines, x, y, options = {}) => {
+    const textLines = Array.isArray(lines) ? lines : String(lines).split('\n');
+    textLines.forEach((line, index) => {
+      doc.text(String(line), x, y + (index * lineHeight), options);
+    });
+  };
+
+  const drawTableHeader = () => {
+    const headerHeight = 26;
+    doc.setFillColor(242, 244, 251);
+    doc.setDrawColor(...borderColor);
+    doc.rect(margin, cursorY, contentWidth, headerHeight, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...[77, 86, 121]);
+
+    let columnX = margin;
+    tableColumns.forEach((column) => {
+      doc.text(column.header, columnX + 8, cursorY + 17);
+      columnX += column.width;
+    });
+
+    cursorY += headerHeight;
+  };
+
+  const drawPageHeader = () => {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.setTextColor(...titleColor);
+    doc.text('Campus Access and Roles', margin, cursorY);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(...[93, 100, 132]);
+    drawTextBlock(
+      'Generated from the full backend user dataset, then filtered by the selected report criteria.',
+      margin,
+      cursorY + 18,
+      { maxWidth: contentWidth * 0.58 },
+    );
+
+    const metaLines = [
+      `Generated: ${formatReportGeneratedAt(generatedAt)}`,
+      `Role filter: ${filters.role === 'ALL' ? 'All roles' : filters.role}`,
+      `Date range: ${formatReportDate(filters.dateFrom)} - ${formatReportDate(filters.dateTo)}`,
+      `Result count: ${users.length}`,
+    ];
+
+    doc.setFontSize(9);
+    doc.setTextColor(...[93, 100, 132]);
+    metaLines.forEach((line, index) => {
+      doc.text(line, pageWidth - margin, cursorY + (index * 14), { align: 'right' });
+    });
+
+    cursorY += 72;
+    doc.setDrawColor(...borderColor);
+    doc.line(margin, cursorY, pageWidth - margin, cursorY);
+    cursorY += 18;
+  };
+
+  const drawSummaryCards = () => {
+    const roleSummary = buildRoleSummary(users);
+    roleSummary.forEach((item, index) => {
+      const x = margin + (index * (summaryCardWidth + 12));
+      doc.setFillColor(250, 251, 255);
+      doc.setDrawColor(...borderColor);
+      doc.roundedRect(x, cursorY, summaryCardWidth, summaryCardHeight, 10, 10, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(...[107, 114, 140]);
+      doc.text(item.role, x + 14, cursorY + 20);
+      doc.setFontSize(22);
+      doc.setTextColor(...titleColor);
+      doc.text(String(item.count), x + 14, cursorY + 46);
+    });
+
+    cursorY += summaryCardHeight + 20;
+  };
+
+  const drawFilterCards = () => {
+    const cards = [
+      { label: 'Selected Role', value: filters.role === 'ALL' ? 'All Roles' : filters.role },
+      { label: 'From', value: formatReportDate(filters.dateFrom) },
+      { label: 'To', value: formatReportDate(filters.dateTo) },
+    ];
+
+    cards.forEach((card, index) => {
+      const x = margin + (index * (filterCardWidth + 12));
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(...borderColor);
+      doc.roundedRect(x, cursorY, filterCardWidth, filterCardHeight, 10, 10, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(...[107, 114, 140]);
+      doc.text(card.label, x + 14, cursorY + 19);
+      doc.setFontSize(11);
+      doc.setTextColor(...titleColor);
+      doc.text(card.value, x + 14, cursorY + 38, { maxWidth: filterCardWidth - 28 });
+    });
+
+    cursorY += filterCardHeight + 22;
+  };
+
+  const drawTableRow = (row, isAlternateRow) => {
+    const values = [
+      `${row.firstName || ''} ${row.lastName || ''}`.trim() || 'Unnamed User',
+      row.email || 'Unknown',
+      row.role || 'USERS',
+      formatReportTableDate(row.createdAt),
+    ];
+
+    const wrappedCells = values.map((value, index) => doc.splitTextToSize(String(value), tableColumns[index].width - 16));
+    const rowHeight = Math.max(...wrappedCells.map((lines) => lines.length)) * lineHeight + 12;
+
+    if (cursorY + rowHeight > pageHeight - margin) {
+      doc.addPage();
+      cursorY = margin;
+      drawPageHeader();
+      drawSummaryCards();
+      drawFilterCards();
+      drawTableHeader();
+    }
+
+    doc.setFillColor(isAlternateRow ? 252 : 255, isAlternateRow ? 252 : 255, isAlternateRow ? 254 : 255);
+    doc.setDrawColor(...borderColor);
+    doc.rect(margin, cursorY, contentWidth, rowHeight, 'FD');
+
+    let columnX = margin;
+    wrappedCells.forEach((lines, index) => {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(...textColor);
+      const textY = cursorY + 16;
+      lines.forEach((line, lineIndex) => {
+        doc.text(String(line), columnX + 8, textY + (lineIndex * lineHeight));
+      });
+      columnX += tableColumns[index].width;
+    });
+
+    cursorY += rowHeight;
+  };
+
+  doc.setTextColor(...textColor);
+  drawPageHeader();
+  drawSummaryCards();
+  drawFilterCards();
+  drawTableHeader();
+
+  if (users.length === 0) {
+    if (cursorY + 40 > pageHeight - margin) {
+      doc.addPage();
+      cursorY = margin;
+      drawPageHeader();
+      drawSummaryCards();
+      drawFilterCards();
+      drawTableHeader();
+    }
+
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(...borderColor);
+    doc.rect(margin, cursorY, contentWidth, 40, 'FD');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(...[93, 100, 132]);
+    doc.text('No users matched the selected filters.', margin + 12, cursorY + 25);
+  } else {
+    users.forEach((user, index) => {
+      drawTableRow(user, index % 2 === 1);
+    });
+  }
+
+  const generatedFileName = `campus-access-roles-report-${new Date().toISOString().slice(0, 10)}.pdf`;
+  doc.save(generatedFileName);
+}
+
 export default function UserManagementPanel({ onSessionExpired } = {}) {
   const authSession = getAuthSession();
   const currentUser = authSession?.user || null;
@@ -88,10 +372,13 @@ export default function UserManagementPanel({ onSessionExpired } = {}) {
   const [deletingUserId, setDeletingUserId] = useState(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [deleteConfirmUser, setDeleteConfirmUser] = useState(null);
   const [addForm, setAddForm] = useState(DEFAULT_ADD_FORM);
   const [editForm, setEditForm] = useState(DEFAULT_EDIT_FORM);
+  const [reportForm, setReportForm] = useState(DEFAULT_REPORT_FORM);
   const [addTouched, setAddTouched] = useState({
     firstName: false,
     lastName: false,
@@ -105,6 +392,7 @@ export default function UserManagementPanel({ onSessionExpired } = {}) {
     email: false,
     password: false,
   });
+  const [reportErrorMessage, setReportErrorMessage] = useState('');
 
   const loadUsers = async () => {
     if (!isAdmin) {
@@ -423,6 +711,66 @@ export default function UserManagementPanel({ onSessionExpired } = {}) {
       setErrorMessage(error instanceof Error ? error.message : 'Failed to delete user');
     } finally {
       setDeletingUserId(null);
+    }
+  };
+
+  const openReportDialog = () => {
+    setIsReportDialogOpen(true);
+    setReportForm(DEFAULT_REPORT_FORM);
+    setReportErrorMessage('');
+  };
+
+  const closeReportDialog = () => {
+    setIsReportDialogOpen(false);
+    setIsGeneratingReport(false);
+    setReportErrorMessage('');
+    setReportForm(DEFAULT_REPORT_FORM);
+  };
+
+  const handleReportChange = (event) => {
+    const { name, value } = event.target;
+    setReportForm((currentForm) => ({
+      ...currentForm,
+      [name]: value,
+    }));
+  };
+
+  const handleGenerateReport = async (event) => {
+    event.preventDefault();
+
+    if (!isAdmin) {
+      setReportErrorMessage('Administrator access is required to generate this report.');
+      return;
+    }
+
+    setIsGeneratingReport(true);
+    setReportErrorMessage('');
+
+    const reportFilters = { ...reportForm };
+
+    try {
+      const response = await fetchAllUsers(authSession?.accessToken || '');
+      const allUsers = Array.isArray(response) ? response : [];
+
+      const filteredUsers = allUsers.filter((user) => {
+        const userDateKey = getDateKey(user.createdAt);
+        const matchesRole = reportFilters.role === 'ALL' || user.role === reportFilters.role;
+        const matchesFrom = !reportFilters.dateFrom || (userDateKey && userDateKey >= reportFilters.dateFrom);
+        const matchesTo = !reportFilters.dateTo || (userDateKey && userDateKey <= reportFilters.dateTo);
+
+        return matchesRole && matchesFrom && matchesTo;
+      });
+
+      createUserReportPdf({
+        generatedAt: new Date().toISOString(),
+        filters: reportFilters,
+        users: filteredUsers,
+      });
+      closeReportDialog();
+    } catch (error) {
+      setReportErrorMessage(error instanceof Error ? error.message : 'Failed to generate report');
+    } finally {
+      setIsGeneratingReport(false);
     }
   };
 
@@ -794,6 +1142,99 @@ export default function UserManagementPanel({ onSessionExpired } = {}) {
     </div>
   ) : null;
 
+  const reportModal = isReportDialogOpen ? (
+    <div className="fixed inset-0 z-[9999] grid place-items-center bg-[#272269]/18 px-4 py-6 backdrop-blur-3xl backdrop-saturate-150">
+      <div className="relative z-[10000] w-full max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-3xl border border-[#272269]/15 bg-white/96 p-8 shadow-2xl shadow-[#272269]/22 ring-1 ring-[#272269]/5">
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <span className="mb-3 inline-block rounded-full border border-[#F17620]/20 bg-[#F17620]/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#F17620]">
+              Report Generator
+            </span>
+            <h4 className="font-headline text-2xl font-black text-[#272269]">Campus access and roles report</h4>
+            <p className="mt-2 text-sm text-[#272269]/70">
+              The report queries the full backend user dataset, then applies your filters before generating a printable PDF.
+            </p>
+          </div>
+          <button
+            className="rounded-full border border-[#272269]/15 bg-white/95 px-3 py-2 text-xs font-bold uppercase tracking-widest text-[#272269] transition-colors hover:bg-white"
+            type="button"
+            onClick={closeReportDialog}
+            disabled={isGeneratingReport}
+          >
+            Close
+          </button>
+        </div>
+
+        {reportErrorMessage ? (
+          <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+            {reportErrorMessage}
+          </div>
+        ) : null}
+
+        <form className="grid gap-4 md:grid-cols-2" onSubmit={handleGenerateReport}>
+          <label className="space-y-2">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#272269]/40">From Date</span>
+            <input
+              className="w-full rounded-2xl border border-[#272269]/15 bg-white/95 px-4 py-3 text-sm text-[#272269] outline-none transition-colors focus:border-[#F17620]"
+              name="dateFrom"
+              type="date"
+              value={reportForm.dateFrom}
+              onChange={handleReportChange}
+            />
+          </label>
+
+          <label className="space-y-2">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#272269]/40">To Date</span>
+            <input
+              className="w-full rounded-2xl border border-[#272269]/15 bg-white/95 px-4 py-3 text-sm text-[#272269] outline-none transition-colors focus:border-[#F17620]"
+              name="dateTo"
+              type="date"
+              value={reportForm.dateTo}
+              onChange={handleReportChange}
+            />
+          </label>
+
+          <label className="space-y-2 md:col-span-2">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#272269]/40">Role Filter</span>
+            <select
+              className="w-full rounded-2xl border border-[#272269]/15 bg-white/95 px-4 py-3 text-sm text-[#272269] outline-none transition-colors focus:border-[#F17620]"
+              name="role"
+              value={reportForm.role}
+              onChange={handleReportChange}
+            >
+              <option value="ALL">All Roles</option>
+              <option value="ADMIN">ADMIN</option>
+              <option value="TECHNICIAN">TECHNICIAN</option>
+              <option value="USERS">USERS</option>
+            </select>
+          </label>
+
+          <div className="md:col-span-2 rounded-2xl border border-[#272269]/10 bg-[#272269]/5 px-4 py-3 text-xs text-[#272269]/60">
+            The report uses the complete user list from <span className="font-semibold text-[#272269]">/api/users/all</span> and then filters it by the selected date range and role.
+          </div>
+
+          <div className="flex items-center justify-end gap-3 md:col-span-2">
+            <button
+              className="rounded-full border border-[#272269]/15 bg-white/95 px-5 py-3 text-xs font-bold uppercase tracking-widest text-[#272269] transition-colors hover:bg-white"
+              type="button"
+              onClick={closeReportDialog}
+              disabled={isGeneratingReport}
+            >
+              Cancel
+            </button>
+            <button
+              className="rounded-full bg-[#F17620] px-5 py-3 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-[#c85f10] disabled:cursor-not-allowed disabled:opacity-60"
+              type="submit"
+              disabled={isGeneratingReport}
+            >
+              {isGeneratingReport ? 'Generating...' : 'Generate PDF'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  ) : null;
+
   return (
     <section className="glass-panel rounded-3xl border border-white/50 p-8 shadow-sm" id="user-management">
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -809,6 +1250,9 @@ export default function UserManagementPanel({ onSessionExpired } = {}) {
 
         <div className="flex items-start gap-3 self-start md:items-center md:self-auto">
           <span className="rounded-full bg-white/70 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#272269]/50">{userCountLabel}</span>
+          <button className="uc-button uc-button--secondary uc-button--small" type="button" onClick={openReportDialog}>
+            Generate Report
+          </button>
           <button className="uc-button uc-button--primary uc-button--small" type="button" onClick={openAddDialog}>
             Add User
           </button>
@@ -956,6 +1400,7 @@ export default function UserManagementPanel({ onSessionExpired } = {}) {
       </div>
 
       {typeof document !== 'undefined' ? createPortal(addModal, document.body) : null}
+      {typeof document !== 'undefined' ? createPortal(reportModal, document.body) : null}
       {typeof document !== 'undefined' ? createPortal(editModal, document.body) : null}
       {typeof document !== 'undefined' ? createPortal(deleteModal, document.body) : null}
     </section>

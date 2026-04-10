@@ -1,0 +1,146 @@
+*   [33m8b95ef2[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m Merge pull request #21 from AnusaraSen/develop
+[31m|[m[32m\[m  
+[31m|[m *   [33mf99b90a[m[33m ([m[1;31morigin/develop[m[33m, [m[1;32mdevelop[m[33m)[m Merge pull request #20 from AnusaraSen/refactor/backend-unification
+[31m|[m [33m|[m[34m\[m  
+[31m|[m [33m|[m * [33m006c636[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfix/facilities-integration[m[33m, [m[1;31morigin/refactor/backend-unification[m[33m)[m fix: notification problem
+[31m|[m * [34m|[m   [33m5935a11[m Merge pull request #19 from AnusaraSen/AnusaraSen-patch-1
+[31m|[m [35m|[m[36m\[m [34m\[m  
+[31m|[m [35m|[m * [34m|[m [33m5fae45c[m[33m ([m[1;31morigin/AnusaraSen-patch-1[m[33m)[m Delete src directory
+[31m|[m [35m|[m[35m/[m [34m/[m  
+[31m|[m * [34m|[m [33m942ada5[m Merge pull request #18 from AnusaraSen/refactor/backend-unification
+[31m|[m [1;31m|[m[34m\[m[34m|[m 
+[31m|[m [1;31m|[m * [33mc904605[m fix: integrate facilities module into unified backend
+[31m|[m [1;31m|[m *   [33m8164bae[m Merge remote-tracking branch 'origin/feature/ticket-module' into fix/facilities-integration
+[31m|[m [1;31m|[m [1;33m|[m[1;34m\[m  
+[31m|[m [1;31m|[m [1;33m|[m * [33m6c9da46[m[33m ([m[1;31morigin/feature/ticket-module[m[33m)[m fix login 500 by scoping exception handler and hardening auth check
+[31m|[m [1;31m|[m [1;33m|[m * [33m1b76973[m add bookings ticket dashboard and improve login error handling
+[31m|[m [1;31m|[m [1;33m|[m * [33m92452b5[m add technician dashboard and role-based ticket comments
+[31m|[m [1;31m|[m [1;33m|[m *   [33m2b7067a[m Merge branch 'develop' into feature/ticket-module
+[31m|[m [1;31m|[m [1;33m|[m [1;35m|[m[1;31m\[m  
+[31m|[m [1;31m|[m [1;33m|[m[1;31m_[m[1;35m|[m[1;31m/[m  
+[31m|[m [1;31m|[m[1;31m/[m[1;33m|[m [1;35m|[m   
+[31m|[m [1;31m|[m [1;33m|[m * [33m634000c[m module c: ticket routing, comments, and backend security adjustments
+[31m|[m [1;31m|[m [1;33m|[m *   [33m58fc2aa[m Merge develop into feature/ticket-module (keep ticket UI and boot app refactor)
+[31m|[m [1;31m|[m [1;33m|[m [31m|[m[32m\[m  
+[31m|[m [1;31m|[m [1;33m|[m * [32m|[m [33m5778610[m Add ticket UI with Tailwind and extend ticket API
+[31m|[m [1;31m|[m [1;33m|[m * [32m|[m [33md0bd25e[m complete backend implementation for ticket module with controllers, services, DTOs, and repositories
+[31m|[m [1;31m|[m [1;33m|[m * [32m|[m [33m428c629[m Clean gitignore
+[31m|[m [1;31m|[m [1;33m|[m * [32m|[m [33mdde3312[m Ticket: add comment controller, DTOs, and file storage service
+[31m|[m [1;31m|[m [1;33m|[m * [32m|[m [33mcf6e0de[m Ticket: add core controller, service, and entity
+[31m|[m [1;31m|[m * [32m|[m [32m|[m [33mdd23448[m[33m ([m[1;31morigin/feature/facilities-module_2[m[33m)[m refactor: reorganize imports in BookingController and BookingServiceImpl for clarity
+[31m|[m [1;31m|[m * [32m|[m [32m|[m   [33m6c37da6[m Merge branch 'feature/facilities-module_2' of https://github.com/AnusaraSen/it3030-paf-2026-smart-campus-groupXX into fix/facilities-integration
+[31m|[m [1;31m|[m [33m|[m[34m\[m [32m\[m [32m\[m  
+[31m|[m [1;31m|[m [33m|[m * [32m|[m [32m|[m [33m1cb73e6[m[33m ([m[1;31morigin/fix/facility-integration[m[33m)[m fixers in DB
+[31m|[m [1;31m|[m * [34m|[m [32m|[m [32m|[m [33m4221f3f[m fix: resolve merge conflicts and integration issues with booking and user management
+[31m|[m [1;31m|[m * [34m|[m [32m|[m [32m|[m   [33m6f011c9[m Merge remote-tracking branch 'origin/feature/booking-module' into fix/facilities-integration
+[31m|[m [1;31m|[m [34m|[m[36m\[m [34m\[m [32m\[m [32m\[m  
+[31m|[m [1;31m|[m [34m|[m [36m|[m[34m/[m [32m/[m [32m/[m  
+[31m|[m [1;31m|[m [34m|[m[34m/[m[36m|[m [32m|[m [32m|[m   
+[31m|[m [1;31m|[m * [36m|[m [32m|[m [32m|[m [33ma6a40fb[m Facilities & Assets Catalogue
+[31m|[m [1;31m|[m * [36m|[m [32m|[m [32m|[m [33m3a87976[m login issue
+[31m|[m [1;31m|[m * [36m|[m [32m|[m [32m|[m   [33m6660823[m Merge branch 'feature/booking-module' into feature/facilities-module_2
+[31m|[m [1;31m|[m [1;31m|[m[1;32m\[m [36m\[m [32m\[m [32m\[m  
+[31m|[m [1;31m|[m * [1;32m|[m [36m|[m [32m|[m [32m|[m [33mb2d533f[m feat: Module A - Facilities & Assets Catalogue complete and tested backend
+[31m|[m [1;31m|[m [1;32m|[m [1;32m|[m [36m|[m [32m|[m [32m|[m * [33m1a1fe2d[m[33m ([m[1;31morigin/feature/booking-module[m[33m)[m fixings
+[31m|[m [1;31m|[m [1;32m|[m [1;32m|[m [36m|[m [32m|[m[36m_[m[32m|[m[36m/[m  
+[31m|[m [1;31m|[m [1;32m|[m [1;32m|[m [36m|[m[36m/[m[32m|[m [32m|[m   
+[31m|[m [1;31m|[m [1;32m|[m [1;32m|[m * [32m|[m [32m|[m [33mc4e5016[m Merge pull request #17 from AnusaraSen/fix/booking-integration
+[31m|[m [1;31m|[m [1;32m|[m [1;32m|[m[1;32m/[m[1;35m|[m [32m|[m [32m|[m 
+[31m|[m [1;31m|[m [1;32m|[m [1;32m|[m [1;35m|[m [32m|[m [32m|[m * [33m38b2485[m[33m ([m[1;31morigin/fix/booking-integration[m[33m, [m[1;32mfix/booking-integration[m[33m)[m Reorganize imports in SecurityConfig
+[31m|[m [1;31m|[m [1;32m|[m [1;32m|[m [1;35m|[m [32m|[m[1;35m_[m[32m|[m[1;35m/[m  
+[31m|[m [1;31m|[m [1;32m|[m [1;32m|[m [1;35m|[m[1;35m/[m[32m|[m [32m|[m   
+[31m|[m [1;31m|[m [1;32m|[m [1;32m|[m * [32m|[m [32m|[m   [33med4487a[m Merge branch 'feature/booking-module' of https://github.com/AnusaraSen/it3030-paf-2026-smart-campus-groupXX into fix/booking-integration
+[31m|[m [1;31m|[m [1;32m|[m [1;32m|[m [31m|[m[1;32m\[m [32m\[m [32m\[m  
+[31m|[m [1;31m|[m [1;32m|[m [1;32m|[m [31m|[m[1;32m/[m [32m/[m [32m/[m  
+[31m|[m [1;31m|[m [1;32m|[m [1;32m|[m[1;32m/[m[31m|[m [32m|[m [32m|[m   
+[31m|[m [1;31m|[m [1;32m|[m * [31m|[m [32m|[m [32m|[m [33mc899839[m fixers
+[31m|[m [1;31m|[m [1;32m|[m [32m|[m * [32m|[m [32m|[m [33m25b9cb3[m fix: resolve merge conflicts and integrate booking module with develop
+[31m|[m [1;31m|[m [1;32m|[m [32m|[m * [32m|[m [32m|[m [33m1503da2[m Merge remote-tracking branch 'origin/main' into fix/booking-integration
+[31m|[m [1;31m|[m [1;32m|[m [32m|[m[32m/[m[31m|[m [32m|[m [32m|[m 
+[31m|[m [1;31m|[m[31m_[m[1;32m|[m[31m_[m[32m|[m[31m/[m [32m/[m [32m/[m  
+[31m|[m[31m/[m[1;31m|[m [1;32m|[m [32m|[m [32m|[m [32m|[m   
+* [1;31m|[m [1;32m|[m [32m|[m [32m|[m [32m|[m   [33mebfca8d[m Merge pull request #16 from AnusaraSen/feature/auth-notification
+[35m|[m[36m\[m [1;31m\[m [1;32m\[m [32m\[m [32m\[m [32m\[m  
+[35m|[m * [1;31m|[m [1;32m|[m [32m|[m [32m|[m [32m|[m [33m87ba962[m[33m ([m[1;31morigin/feature/auth-notification[m[33m, [m[1;32mfeature/auth-notification[m[33m)[m feat: Implement Google OAuth2 login and enhance user model
+* [36m|[m [1;31m|[m [1;32m|[m [32m|[m [32m|[m [32m|[m   [33ma2f9e45[m Merge pull request #15 from AnusaraSen/develop
+[1;32m|[m[1;31m\[m [36m\[m [1;31m\[m [1;32m\[m [32m\[m [32m\[m [32m\[m  
+[1;32m|[m [1;31m|[m [36m|[m[1;31m/[m [1;32m/[m [32m/[m [32m/[m [32m/[m  
+[1;32m|[m [1;31m|[m[1;31m/[m[36m|[m [1;32m/[m [32m/[m [32m/[m [32m/[m   
+[1;32m|[m [1;31m|[m[1;32m_[m[36m|[m[1;32m/[m [32m/[m [32m/[m [32m/[m    
+[1;32m|[m[1;32m/[m[1;31m|[m [36m|[m [32m|[m [32m|[m [32m|[m     
+[1;32m|[m * [36m|[m [32m|[m [32m|[m [32m|[m [33mfe68bc0[m Merge pull request #13 from AnusaraSen/feature/auth-notification
+[1;32m|[m [32m|[m[36m\[m[36m|[m [32m|[m [32m|[m [32m|[m 
+[1;32m|[m [32m|[m [36m|[m[32m_[m[32m|[m[32m_[m[32m|[m[32m/[m  
+[1;32m|[m [32m|[m[32m/[m[36m|[m [32m|[m [32m|[m   
+[1;32m|[m [32m|[m * [32m|[m [32m|[m [33m8392bea[m - Added state management for sidebar collapse and active section in AdminDashboardView.
+* [32m|[m [1;34m|[m [32m|[m [32m|[m   [33mfb7ab14[m Merge pull request #11 from AnusaraSen/develop
+[1;35m|[m[1;36m\[m [32m\[m [1;34m\[m [32m\[m [32m\[m  
+[1;35m|[m [1;36m|[m [32m|[m [1;34m|[m * [32m\[m   [33mbd6ec59[m feat: complete booking module frontend - user dashboard, admin panel, booking form
+[1;35m|[m [1;36m|[m [32m|[m [1;34m|[m [31m|[m[32m\[m [32m\[m  
+[1;35m|[m [1;36m|[m [32m|[m [1;34m|[m[32m_[m[31m|[m[32m/[m [32m/[m  
+[1;35m|[m [1;36m|[m [32m|[m[32m/[m[1;34m|[m [31m|[m [32m|[m   
+[1;35m|[m [1;36m|[m * [1;34m|[m [31m|[m [32m|[m [33m7830395[m Merge pull request #12 from AnusaraSen/feature/auth-notification
+[1;35m|[m [1;36m|[m[1;36m/[m[1;34m|[m [1;34m|[m [31m|[m [32m|[m 
+[1;35m|[m [1;36m|[m [1;34m|[m[1;34m/[m [31m/[m [32m/[m  
+[1;35m|[m [1;36m|[m * [31m|[m [32m|[m [33m6d4e5b4[m feat: enhance admin dashboard with user management, activity alerts, and metrics
+[1;35m|[m [1;36m|[m * [31m|[m [32m|[m [33m7016101[m feat: add SignupView and LandingView components for user registration and landing page
+[1;35m|[m [1;36m|[m * [31m|[m [32m|[m [33mf7745c3[m Implement user authentication and management features with JWT support
+[1;35m|[m [1;36m|[m * [31m|[m [32m|[m [33m0b4a352[m Update DatabaseConnectionTest.java
+[1;35m|[m [1;36m|[m * [31m|[m [32m|[m [33m4f8acdb[m User_management model completed
+[1;35m|[m [1;36m|[m * [31m|[m [32m|[m   [33mc7f456e[m Merge pull request #9 from AnusaraSen/main
+[1;35m|[m [1;36m|[m [35m|[m[1;35m\[m [31m\[m [32m\[m  
+[1;35m|[m [1;36m|[m[1;35m_[m[35m|[m[1;35m/[m [31m/[m [32m/[m  
+[1;35m|[m[1;35m/[m[1;36m|[m [35m|[m [31m|[m [32m|[m   
+[1;35m|[m * [35m|[m [31m|[m [32m|[m   [33m98c353f[m Merge pull request #10 from AnusaraSen/main
+[1;35m|[m [32m|[m[1;35m\[m [35m\[m [31m\[m [32m\[m  
+[1;35m|[m [32m|[m[1;35m/[m [35m/[m [31m/[m [32m/[m  
+[1;35m|[m[1;35m/[m[32m|[m [35m|[m [31m|[m [32m/[m   
+[1;35m|[m [32m|[m [35m|[m[32m_[m[31m|[m[32m/[m    
+[1;35m|[m [32m|[m[32m/[m[35m|[m [31m|[m     
+* [32m|[m [35m|[m [31m|[m   [33mf3406c3[m Merge pull request #8 from AnusaraSen/feature/auth-notification
+[1;33m|[m[35m\[m [32m\[m [35m\[m [31m\[m  
+[1;33m|[m [35m|[m [32m|[m[35m/[m [31m/[m  
+[1;33m|[m [35m|[m[35m/[m[32m|[m [31m|[m   
+[1;33m|[m * [32m|[m [31m|[m   [33m93b5249[m Merge pull request #7 from AnusaraSen/main
+[1;33m|[m [1;35m|[m[1;33m\[m [32m\[m [31m\[m  
+[1;33m|[m [1;35m|[m[1;33m/[m [32m/[m [31m/[m  
+[1;33m|[m[1;33m/[m[1;35m|[m [32m|[m [31m|[m   
+* [1;35m|[m [32m|[m [31m|[m [33m84dc950[m Merge pull request #5 from AnusaraSen/feature/auth-notification
+[31m|[m[1;35m\[m[1;35m|[m [32m|[m [31m|[m 
+[31m|[m * [32m|[m [31m|[m   [33m42c49cc[m Merge pull request #4 from AnusaraSen/main
+[31m|[m [32m|[m[31m\[m [32m\[m [31m\[m  
+[31m|[m [32m|[m[31m/[m [32m/[m [31m/[m  
+[31m|[m[31m/[m[32m|[m [32m/[m [31m/[m   
+[31m|[m [32m|[m[32m/[m [31m/[m    
+* [32m|[m [31m|[m [33m474effb[m Merge pull request #3 from AnusaraSen/develop
+[35m|[m[32m\[m[32m|[m [31m|[m 
+[35m|[m [32m|[m * [33m49bc890[m feat: add SiteHeader component with authentication handling and styles
+[35m|[m [32m|[m * [33ma63c9c0[m feat: implement booking dashboard with booking stats and cancellation functionality
+[35m|[m [32m|[m * [33mb11adc5[m feat: add request and response DTOs with validation annotations
+[35m|[m [32m|[m * [33m8df0539[m feat: add global exception handler for 400 404 error responses
+[35m|[m [32m|[m * [33m9f1d9e2[m feat: add Booking entity with status enum and timestamps
+[35m|[m [32m|[m * [33m521dc21[m feat: add BookingRepository with conflict detection query
+[35m|[m [32m|[m * [33m8500aa4[m feat: implement booking service with status transition validation
+[35m|[m [32m|[m * [33mc4c3c7a[m feat: add BookingController with POST, GET, PATCH, DELETE endpoints
+[35m|[m [32m|[m * [33mdeef1eb[m feat: implement booking module
+[35m|[m [32m|[m[32m/[m  
+[35m|[m *   [33me40b748[m[33m ([m[1;31morigin/feature/facility-module[m[33m)[m Merge pull request #2 from AnusaraSen/main
+[35m|[m [1;31m|[m[35m\[m  
+[35m|[m [1;31m|[m[35m/[m  
+[35m|[m[35m/[m[1;31m|[m   
+* [1;31m|[m   [33ma509970[m Merge pull request #1 from AnusaraSen/AnusaraSen-patch-1
+[1;33m|[m[1;34m\[m [1;31m\[m  
+[1;33m|[m * [1;31m|[m [33me74e7a4[m Add CODEOWNERS file with initial owner
+[1;33m|[m[1;33m/[m [1;31m/[m  
+* [1;31m|[m [33mea2a334[m feat: Update VSCode settings and add .gitignore files for various directories
+* [1;31m|[m [33mb4c3723[m feat: Add H2 in-memory database dependency for testing and update test property source
+* [1;31m|[m [33mf816e77[m fix: Exclude SecurityAutoConfiguration in test property source for ServerApiApplicationTests
+* [1;31m|[m [33mba9e3ba[m fix: Correct working directories for Maven and React build steps in CI pipeline
+* [1;31m|[m [33m570f28f[m feat: Initialize client-web-app and server-api projects
+* [1;31m|[m [33mce0105b[m Create CI pipeline for Spring Boot and React
+* [1;31m|[m [33m9fd07af[m Create ci-pipeline.yml
+* [1;31m|[m [33m46051e3[m Delete .github
+* [1;31m|[m [33m855fbb9[m Create .github
+[1;31m|[m[1;31m/[m  
+* [33m572a64b[m Initial commit
+* [33m2ff9b2c[m[33m ([m[1;31morigin/feature/facilities-module[m[33m)[m feat: Module A - Facilities & Assets Catalogue complete and tested backend

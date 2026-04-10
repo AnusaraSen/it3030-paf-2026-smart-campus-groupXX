@@ -1,25 +1,48 @@
 package com.smartcampus.service.ticket;
 
-import com.smartcampus.dto.ticket.*;
-import com.smartcampus.exception.*;
-import com.smartcampus.model.*;
-import com.smartcampus.model.auth_notification.User;
-import com.smartcampus.model.auth_notification.Role;
-import com.smartcampus.model.facilities.Resource;
-import com.smartcampus.repository.auth_notification.UserRepository;
-import com.smartcampus.repository.facilities.ResourceRepository;
-import com.smartcampus.repository.ticket.*;
-import com.smartcampus.service.notification.NotificationService;
-import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.*;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.smartcampus.dto.ticket.AddCommentRequest;
+import com.smartcampus.dto.ticket.AssignTicketRequest;
+import com.smartcampus.dto.ticket.AttachmentResponse;
+import com.smartcampus.dto.ticket.CommentResponse;
+import com.smartcampus.dto.ticket.CreateTicketRequest;
+import com.smartcampus.dto.ticket.ResolveTicketRequest;
+import com.smartcampus.dto.ticket.TicketResponse;
+import com.smartcampus.dto.ticket.TicketSummaryResponse;
+import com.smartcampus.dto.ticket.UpdateTicketStatusRequest;
+import com.smartcampus.exception.CommentOwnershipException;
+import com.smartcampus.exception.FileUploadException;
+import com.smartcampus.exception.ForbiddenOperationException;
+import com.smartcampus.exception.InvalidStatusTransitionException;
+import com.smartcampus.exception.ResourceNotFoundException;
+import com.smartcampus.exception.TicketDeletionNotAllowedException;
+import com.smartcampus.model.Ticket;
+import com.smartcampus.model.TicketAttachment;
+import com.smartcampus.model.TicketComment;
+import com.smartcampus.model.TicketPriority;
+import com.smartcampus.model.TicketStatus;
+import com.smartcampus.model.auth_notification.Role;
+import com.smartcampus.model.auth_notification.User;
+import com.smartcampus.model.facilities.Resource;
+import com.smartcampus.repository.auth_notification.UserRepository;
+import com.smartcampus.repository.facilities.ResourceRepository;
+import com.smartcampus.repository.ticket.TicketAttachmentRepository;
+import com.smartcampus.repository.ticket.TicketCommentRepository;
+import com.smartcampus.repository.ticket.TicketRepository;
+import com.smartcampus.service.notification.NotificationService;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
