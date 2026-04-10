@@ -1,44 +1,61 @@
-import { useState, useEffect, useCallback } from 'react';
-import { getMyBookings, cancelBooking } from '../api/bookingApi';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { cancelBooking, getMyBookings } from '../api/bookingApi';
 
-const useBookings = () => {
+export default function useBookings() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const fetchBookings = useCallback(async () => {
+  const loadBookings = useCallback(async () => {
+    setLoading(true);
+    setError('');
+
     try {
-      setLoading(true);
-      setError(null);
       const response = await getMyBookings();
-      setBookings(response.data);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to fetch bookings.');
+      const nextBookings = Array.isArray(response.data) ? response.data : [];
+      setBookings(nextBookings);
+    } catch (requestError) {
+      setBookings([]);
+      setError(requestError instanceof Error ? requestError.message : 'Unable to load bookings.');
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchBookings();
-  }, [fetchBookings]);
+    loadBookings();
+  }, [loadBookings, refreshKey]);
 
-  const handleCancel = async (id, cancelReason = '') => {
-    try {
-      await cancelBooking(id, cancelReason);
-      await fetchBookings();
-    } catch (err) {
-      throw new Error(err.response?.data?.message || 'Failed to cancel booking.');
+  const handleCancel = useCallback(async (bookingId, cancelReason = '') => {
+    if (!bookingId) {
+      throw new Error('Booking ID is required.');
     }
+
+    await cancelBooking(bookingId, cancelReason || null);
+    setRefreshKey((currentValue) => currentValue + 1);
+  }, []);
+
+  const stats = useMemo(() => {
+    const total = bookings.length;
+    const approved = bookings.filter((booking) => booking.status === 'APPROVED').length;
+    const pending = bookings.filter((booking) => booking.status === 'PENDING').length;
+    const cancelled = bookings.filter((booking) => booking.status === 'CANCELLED').length;
+
+    return {
+      total,
+      approved,
+      pending,
+      cancelled,
+    };
+  }, [bookings]);
+
+  return {
+    bookings,
+    loading,
+    error,
+    stats,
+    handleCancel,
+    refreshBookings: loadBookings,
   };
-
-  const stats = {
-    total: bookings.length,
-    approved: bookings.filter((b) => b.status === 'APPROVED').length,
-    pending: bookings.filter((b) => b.status === 'PENDING').length,
-  };
-
-  return { bookings, loading, error, stats, handleCancel, refetch: fetchBookings };
-};
-
-export default useBookings;
+}
