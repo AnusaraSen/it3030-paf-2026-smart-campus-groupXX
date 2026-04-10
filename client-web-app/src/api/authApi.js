@@ -1,4 +1,4 @@
-export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
+export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || process.env.REACT_APP_API_BASE || 'http://localhost:8080';
 
 const AUTH_SESSION_KEY = 'unicore.auth.session';
 const AUTH_TOKEN_KEY = 'unicore.auth.token';
@@ -153,6 +153,40 @@ export async function deleteUserById(id, token = '') {
       Authorization: `Bearer ${resolvedToken}`,
     },
   });
+}
+
+export function updateStoredAuthUser(updatedUser) {
+  const storages = [window.localStorage, window.sessionStorage];
+  const storage = storages.find((candidateStorage) => candidateStorage.getItem(AUTH_SESSION_KEY));
+
+  if (!storage) {
+    return;
+  }
+
+  const storedSession = storage.getItem(AUTH_SESSION_KEY);
+  if (!storedSession) {
+    return;
+  }
+
+  let session;
+  try {
+    session = JSON.parse(storedSession);
+  } catch {
+    session = {};
+  }
+
+  const nextUser = {
+    ...(session.user || {}),
+    ...(updatedUser || {}),
+  };
+
+  const nextSession = {
+    ...session,
+    user: nextUser,
+  };
+
+  storage.setItem(AUTH_SESSION_KEY, JSON.stringify(nextSession));
+  storage.setItem(AUTH_USER_KEY, JSON.stringify(nextUser));
 }
 
 export function saveAuthSession(authResponse, remember = false) {

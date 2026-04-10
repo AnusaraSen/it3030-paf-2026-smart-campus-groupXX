@@ -2,10 +2,34 @@
     "configurations": [
         {
             "type": "java",
-            "name": "Spring Boot-ServerApiApplication<server-api>",
+            "name": "BackendApplication",
+            "request": "launch",
+            "mainClass": "com.smartcampus.BackendApplication",
+            "projectName": "backend"
+        },
+        {
+            "type": "java",
+            "name": "BackendApplication",
+            "request": "launch",
+            "mainClass": "com.smartcampus.BackendApplication",
+            "projectName": "server-api"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-BackendApplication<server-api>",
             "request": "launch",
             "cwd": "${workspaceFolder}",
-            "mainClass": "com.smartcampus.server_api.ServerApiApplication",
+            "mainClass": "com.smartcampus.BackendApplication",
+            "projectName": "server-api",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-BackendApplication<server-api>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.smartcampus.BackendApplication",
             "projectName": "server-api",
             "args": "",
             "envFile": "${workspaceFolder}/.env"

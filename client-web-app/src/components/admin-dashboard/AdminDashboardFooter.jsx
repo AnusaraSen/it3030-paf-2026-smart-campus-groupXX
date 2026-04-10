@@ -14,7 +14,7 @@ export default function AdminDashboardFooter() {
         <div className="footer-column">
           <h4>Platform</h4>
           <nav>
-            <a href="#about">About UniCore</a>
+            <a href="/about">About UniCore</a>
             <a href="#dashboard">Dashboard</a>
             <a href="#bookings">Bookings</a>
           </nav>

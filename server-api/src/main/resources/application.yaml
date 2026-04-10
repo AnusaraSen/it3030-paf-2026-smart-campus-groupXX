@@ -1,0 +1,86 @@
+spring:
+  application:
+    name: server-api
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/smart_campus_db}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:anusara}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+  profiles:
+    default: ${SPRING_PROFILES_DEFAULT:mysql}
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:321821547881-tmg0rk0c715ag4v5ed3pqirnabhg02it.apps.googleusercontent.com}
+            client-secret: ${GOOGLE_CLIENT_SECRET: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}
+            scope:
+              - openid
+              - profile
+              - email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            authorization-grant-type: authorization_code
+        provider:
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+            token-uri: https://oauth2.googleapis.com/token
+            user-info-uri: https://openidconnect.googleapis.com/v1/userinfo
+            user-name-attribute: sub
+
+server:
+  port: ${SERVER_PORT:8080}
+
+file:
+  upload-dir: uploads/
+
+app:
+  jwt:
+    secret: ${APP_JWT_SECRET:u7G0q0T4yBv2cZkF9K2Cq5m2oC9Qz3n1B6yq3zPpZ0M=}
+    expiration-minutes: ${APP_JWT_EXPIRATION_MINUTES:60}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: h2
+  datasource:
+    url: jdbc:h2:mem:smart_campus_db;MODE=MySQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  sql:
+    init:
+      mode: never
+
+---
+spring:
+  config:
+    activate:
+      on-profile: mysql
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/smart_campus_db}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:anusara}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+      continue-on-error: true
+      schema-locations: classpath:schema.sql
